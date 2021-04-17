@@ -1,0 +1,4 @@
+[submodule "extern/godot-headers"]
+	path = extern/godot-headers
+	url = git@github.com:godotengine/godot-headers.git
+	branch = 3.2
