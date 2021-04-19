@@ -86,8 +86,8 @@ void terminal::mark_dirty(int line_beg, int line_end)
 
 void terminal::scroll_up(int keep_top, int down)
 {
-    int move_to = keep_top;
-    int move_start = move_to + down;
+    int move_to = std::clamp(keep_top, 0, screen.size().height);
+    int move_start = std::clamp(move_to + down, 0, screen.size().height);
     int move_end = screen.size().height;
 
     std::move(
@@ -100,8 +100,11 @@ void terminal::scroll_up(int keep_top, int down)
     mark_dirty(move_to, move_end);
 }
 
-void terminal::clear_lines(int const line_beg, int const line_end)
+void terminal::clear_lines(int line_beg, int line_end)
 {
+    line_end = std::clamp(line_end, 0, screen.size().height);
+    line_beg = std::clamp(line_beg, 0, line_end);
+
     auto const fill_glyph = glyph{
         glyph_style{cursor.style.fg, cursor.style.bg, {}},
         code_point{0}
