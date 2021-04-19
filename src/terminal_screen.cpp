@@ -15,3 +15,13 @@ glyph& terminal_screen::get_glyph(position pos)
 {
     return get_line(pos.y)[pos.x];
 }
+
+const glyph* terminal_screen::get_line(int line) const
+{
+    return &data[line * size.width];
+}
+
+const glyph& terminal_screen::get_glyph(position pos) const
+{
+    return get_line(pos.y)[pos.x];
+}

@@ -22,6 +22,9 @@ public:
 
     glyph* get_line(int line);
     glyph& get_glyph(position pos);
+
+    glyph const* get_line(int line) const;
+    glyph const& get_glyph(position pos) const;
 };
 
 #endif // header guard
