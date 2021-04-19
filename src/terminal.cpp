@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 
 #include "terminal.hpp"
 
@@ -7,11 +8,16 @@ int code_point_width(code_point)
     return 1;
 }
 
-void terminal::newline(int column)
+void terminal::newline(bool first_column)
 {
-    // TODO: handle bottom
-    cursor.pos.y++;
-    cursor.pos.x = column;
+    if (cursor.pos.y + 1 < screen.size().height) {
+        cursor.pos.y++;
+    } else {
+        scroll_up(0, 1);
+    }
+
+    if (first_column)
+        cursor.pos.x = 0;
 }
 
 void terminal::write_char(code_point ch)
@@ -21,12 +27,12 @@ void terminal::write_char(code_point ch)
     auto* gl{glyph_at_cursor()};
     if (cursor.state.is_set(cursor_state_bit::wrap_next)) {
         gl->style.mode.set(glyph_attr_bit::text_wraps);
-        newline();
+        newline(true);
         gl = glyph_at_cursor();
     }
 
     if (cursor.pos.x + width > screen.size().width) {
-        newline();
+        newline(true);
         gl = glyph_at_cursor();
     }
 
@@ -64,6 +70,37 @@ glyph* terminal::glyph_at_cursor()
 
 void terminal::mark_dirty(int line)
 {
+}
+
+void terminal::mark_dirty(int line_beg, int line_end)
+{
+}
+
+void terminal::scroll_up(int keep_top, int down)
+{
+    int move_to = keep_top;
+    int move_start = move_to + down;
+    int move_end = screen.size().height;
+
+    std::move(
+        screen.get_line(move_start),
+        screen.get_line(move_end), // pointer past last glyph
+        screen.get_line(move_to));
+
+    clear_lines(move_end - down, move_end);
+
+    mark_dirty(move_to, move_end);
+}
+
+void terminal::clear_lines(int const line_beg, int const line_end)
+{
+    auto const fill_glyph = glyph{
+        glyph_style{cursor.style.fg, cursor.style.bg, {}},
+        code_point{0}
+    };
+
+    std::fill(screen.get_line(line_beg), screen.get_line(line_end), fill_glyph);
+    mark_dirty(line_beg, line_end);
 }
 
 void terminal::dump()

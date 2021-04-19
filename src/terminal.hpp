@@ -30,12 +30,15 @@ public:
     {
     }
 
-    void newline(int column=0);
+    void newline(bool first_column);
     void write_char(code_point ch);
     void move_cursor_forward(int width);
     void set_char(code_point ch, glyph_style style, position pos);
     glyph* glyph_at_cursor();
     void mark_dirty(int line);
+    void mark_dirty(int line_beg, int line_end);
+    void scroll_up(int keep_top=0, int down=1);
+    void clear_lines(int line_beg, int line_end);
     void dump();
 };
 
