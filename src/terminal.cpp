@@ -52,9 +52,17 @@ void terminal::write_char(code_point ch)
     }
 }
 
+void terminal::move_cursor(position pos)
+{
+    cursor.pos = clamp_pos(pos);
+    cursor.state.unset(cursor_state_bit::wrap_next);
+}
+
 void terminal::move_cursor_forward(int width)
 {
-    cursor.pos.x += width;
+    auto new_pos = cursor.pos;
+    new_pos.x += width;
+    move_cursor(new_pos);
 }
 
 void terminal::set_char(code_point ch, glyph_style style, position pos)
@@ -108,17 +116,30 @@ void terminal::dump()
     for (int y = 0; y < screen.size().height; ++y) {
         for (int x = 0; x < screen.size().width; ++x) {
             auto pos = position{x, y};
-            if (cursor.pos == pos) {
+            auto code = screen.get_glyph(pos).code;
+            if (code != 0) {
+                std::cout << (char)code;
+            } else if (cursor.pos == pos) {
                 std::cout << '_';
             } else {
-                auto code = screen.get_glyph(pos).code;
-                if (code == 0) {
-                    std::cout << ' ';
-                } else {
-                    std::cout << (char)code;
-                }
+                std::cout << ' ';
             }
         }
         std::cout << '\n';
     }
+}
+
+position terminal::clamp_pos(position p)
+{
+    auto sz = screen.size();
+
+    p.x = p.x < 0         ? 0
+        : p.x >= sz.width ? sz.width - 1
+        :                   p.x;
+
+    p.y = p.y < 0          ? 0
+        : p.y >= sz.height ? sz.height - 1
+        :                    p.y;
+
+    return p;
 }

@@ -32,6 +32,7 @@ public:
 
     void newline(bool first_column);
     void write_char(code_point ch);
+    void move_cursor(position pos);
     void move_cursor_forward(int width);
     void set_char(code_point ch, glyph_style style, position pos);
     glyph* glyph_at_cursor();
@@ -40,6 +41,9 @@ public:
     void scroll_up(int keep_top=0, int down=1);
     void clear_lines(int line_beg, int line_end);
     void dump();
+
+private:
+    position clamp_pos(position p);
 };
 
 #endif // header guard
