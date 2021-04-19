@@ -3,8 +3,16 @@ cmake_minimum_required(VERSION 3.10)
 project(godot-terminal
     LANGUAGES CXX)
 
-add_library(godot-terminal MODULE
+
+add_library(terminal STATIC
     src/terminal.cpp
+    src/terminal_screen.cpp)
+
+target_compile_features(terminal
+    PRIVATE cxx_std_17)
+
+
+add_library(godot-terminal MODULE
     src/godot-export.cpp)
 
 include(GenerateExportHeader)
@@ -22,3 +30,6 @@ set_target_properties(godot-terminal PROPERTIES
 
 target_compile_features(godot-terminal
     PRIVATE cxx_std_17)
+
+target_link_libraries(godot-terminal
+    PRIVATE terminal)
