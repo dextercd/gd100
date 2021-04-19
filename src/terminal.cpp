@@ -25,7 +25,7 @@ void terminal::write_char(code_point ch)
         gl = glyph_at_cursor();
     }
 
-    if (cursor.pos.x + width > screen.size.width) {
+    if (cursor.pos.x + width > screen.size().width) {
         newline();
         gl = glyph_at_cursor();
     }
@@ -33,13 +33,13 @@ void terminal::write_char(code_point ch)
     set_char(ch, cursor.style, cursor.pos);
 
     for (auto x{cursor.pos.x + 1};
-         x < screen.size.width && x < cursor.pos.x + width;
+         x < screen.size().width && x < cursor.pos.x + width;
          ++x)
     {
         gl[x].style.mode.set(glyph_attr_bit::wide);
     }
 
-    if (cursor.pos.x + width < screen.size.width) {
+    if (cursor.pos.x + width < screen.size().width) {
         move_cursor_forward(width);
     } else {
         cursor.state.set(cursor_state_bit::wrap_next);
@@ -68,8 +68,8 @@ void terminal::mark_dirty(int line)
 
 void terminal::dump()
 {
-    for (int y = 0; y < screen.size.height; ++y) {
-        for (int x = 0; x < screen.size.width; ++x) {
+    for (int y = 0; y < screen.size().height; ++y) {
+        for (int x = 0; x < screen.size().width; ++x) {
             auto pos = position{x, y};
             if (cursor.pos == pos) {
                 std::cout << '_';

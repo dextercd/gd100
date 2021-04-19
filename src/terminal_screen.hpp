@@ -6,10 +6,8 @@
 #include "glyph.hpp"
 
 class terminal_screen {
-public:
-    extend size;
-
 private:
+    extend m_size;
     std::unique_ptr<glyph[]> data;
 
 public:
@@ -25,6 +23,8 @@ public:
 
     glyph const* get_line(int line) const;
     glyph const& get_glyph(position pos) const;
+
+    extend size() const;
 };
 
 #endif // header guard
