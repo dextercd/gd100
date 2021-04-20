@@ -2,3 +2,8 @@
 	path = extern/godot-headers
 	url = git@github.com:godotengine/godot-headers.git
 	branch = 3.2
+
+[submodule "extern/Catch2"]
+	path = extern/Catch2
+	url = https://github.com/catchorg/Catch2.git
+	branch = v2.x
