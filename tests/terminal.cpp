@@ -10,7 +10,11 @@ terminal test_term()
 
 TEST_CASE("Terminal writing", "[write]") {
     auto t = test_term();
-    REQUIRE(t.cursor.pos == position{0, 0});
+
+    SECTION("After initialisation") {
+        REQUIRE(t.cursor.pos == position{0, 0});
+        REQUIRE(t.screen.get_line(3)[4].code == 0);
+    }
 
     SECTION("Writing sets a character and moves the cursor") {
         t.write_char('A');

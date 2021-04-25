@@ -2,7 +2,7 @@
 
 terminal_screen::terminal_screen(extend screen_sz)
     : m_size{screen_sz}
-    , data{new glyph[m_size.width * m_size.height]}
+    , data{new glyph[m_size.width * m_size.height]{}}
 {
 }
 
