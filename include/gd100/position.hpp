@@ -1,6 +1,8 @@
 #ifndef GDTERM_POSITION_HPP
 #define GDTERM_POSITION_HPP
 
+#include <iosfwd>
+
 struct position {
     int x;
     int y;
@@ -15,5 +17,7 @@ struct position {
         return !(left == right);
     }
 };
+
+std::ostream& operator<<(std::ostream&, position);
 
 #endif // header guard

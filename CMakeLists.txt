@@ -7,7 +7,8 @@ enable_testing()
 
 add_library(terminal STATIC
     src/terminal.cpp
-    src/terminal_screen.cpp)
+    src/terminal_screen.cpp
+    src/position.cpp)
 
 target_include_directories(terminal
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
