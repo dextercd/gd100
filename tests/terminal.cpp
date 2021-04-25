@@ -37,5 +37,21 @@ TEST_CASE("Terminal writing", "[write]") {
 TEST_CASE("Terminal scrolling", "[scroll]") {
     auto t = test_term();
 
-    REQUIRE(t.cursor.pos == position{0, 0});
+    auto write_full_line = [&] {
+        t.write_char('A'); t.write_char('B'); t.write_char('C');
+        t.write_char('D'); t.write_char('E');
+    };
+
+    SECTION("Should start scrolling when no space left") {
+        write_full_line();
+        write_full_line();
+        write_full_line();
+        write_full_line();
+
+        REQUIRE(t.cursor.pos == position{4, 3});
+
+        t.write_char('a');
+
+        REQUIRE(t.cursor.pos == position{1, 3});
+    }
 }
