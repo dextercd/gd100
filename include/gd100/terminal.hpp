@@ -19,7 +19,7 @@ struct terminal_cursor {
 };
 
 class terminal {
-private:
+public:
     terminal_cursor cursor{};
     terminal_screen screen{};
 

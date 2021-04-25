@@ -1,7 +1,7 @@
 #include <iostream>
 #include <algorithm>
 
-#include "terminal.hpp"
+#include <gd100/terminal.hpp>
 
 int code_point_width(code_point)
 {

@@ -1,4 +1,4 @@
-#include "terminal_screen.hpp"
+#include <gd100/terminal_screen.hpp>
 
 terminal_screen::terminal_screen(extend screen_sz)
     : m_size{screen_sz}
