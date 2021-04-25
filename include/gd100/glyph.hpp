@@ -2,6 +2,7 @@
 #define GDTERM_GLYPH_HPP
 
 #include "bit_container.hpp"
+#include "position.hpp"
 
 enum class glyph_attr_bit {
     text_wraps = 1 << 0,
@@ -13,21 +14,6 @@ class glyph_attribute : public bit_container<glyph_attr_bit> {};
 class color {};
 
 using code_point = std::uint32_t;
-
-struct position {
-    int x;
-    int y;
-
-    friend bool operator==(position left, position right)
-    {
-        return left.x == right.x && left.y == right.y;
-    }
-
-    friend bool operator!=(position left, position right)
-    {
-        return !(left == right);
-    }
-};
 
 struct extend {
     int width;
