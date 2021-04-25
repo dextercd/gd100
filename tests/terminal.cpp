@@ -59,3 +59,22 @@ TEST_CASE("Terminal scrolling", "[scroll]") {
         REQUIRE(t.cursor.pos == gd100::position{1, 3});
     }
 }
+
+TEST_CASE("Terminal driven via decode", "[terminal-decode]") {
+    auto t = test_term();
+    SECTION("Basic write") {
+        char hw[] = "Hello world!";
+        auto processed = t.process_bytes(hw, sizeof(hw) - 1);
+
+        REQUIRE(processed == sizeof(hw) - 1);
+
+        REQUIRE(t.screen.get_glyph({0, 0}).code == 'H');
+        REQUIRE(t.screen.get_glyph({4, 0}).code == 'o');
+        REQUIRE(t.screen.get_glyph({0, 1}).code == ' ');
+        REQUIRE(t.screen.get_glyph({4, 1}).code == 'l');
+        REQUIRE(t.screen.get_glyph({0, 2}).code == 'd');
+        REQUIRE(t.screen.get_glyph({1, 2}).code == '!');
+
+        REQUIRE(t.cursor.pos == gd100::position{2, 2});
+    }
+}

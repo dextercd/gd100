@@ -2,6 +2,7 @@
 #include <algorithm>
 
 #include <gd100/terminal.hpp>
+#include <gd100/terminal_decoder.hpp>
 
 namespace gd100 {
 
@@ -147,6 +148,30 @@ position terminal::clamp_pos(position p)
         :                    p.y;
 
     return p;
+}
+
+int terminal::process_bytes(const char* bytes, int length)
+{
+    auto decoded = decode(bytes, length);
+    if (decoded.bytes_consumed == 0)
+        return length;
+
+    process_instruction(decoded.instruction);
+
+    auto rest_consumed = process_bytes(
+                            bytes + decoded.bytes_consumed,
+                            length - decoded.bytes_consumed);
+
+    return decoded.bytes_consumed + rest_consumed;
+}
+
+void terminal::process_instruction(terminal_instruction inst)
+{
+    switch(inst.type) {
+        case instruction_type::write_char:
+            write_char(inst.write_char.code);
+            break;
+    }
 }
 
 } // gd100::

@@ -5,6 +5,7 @@
 
 #include "bit_container.hpp"
 #include "terminal_screen.hpp"
+#include "terminal_decoder.hpp"
 
 namespace gd100 {
 
@@ -42,6 +43,8 @@ public:
     void mark_dirty(int line_beg, int line_end);
     void scroll_up(int keep_top=0, int down=1);
     void clear_lines(int line_beg, int line_end);
+    int process_bytes(const char* bytes, int length);
+    void process_instruction(terminal_instruction inst);
     void dump();
 
 private:

@@ -1,6 +1,8 @@
 #ifndef GDTERM_GLYPH_HPP
 #define GDTERM_GLYPH_HPP
 
+#include <cstdint>
+
 #include "bit_container.hpp"
 #include "position.hpp"
 

@@ -8,7 +8,8 @@ enable_testing()
 add_library(terminal STATIC
     src/terminal.cpp
     src/terminal_screen.cpp
-    src/position.cpp)
+    src/position.cpp
+    src/terminal_decoder.cpp)
 
 target_include_directories(terminal
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -19,7 +20,7 @@ set_target_properties(terminal PROPERTIES
 )
 
 target_compile_features(terminal
-    PRIVATE cxx_std_17)
+    PUBLIC cxx_std_17)
 
 
 add_library(godot-terminal MODULE
