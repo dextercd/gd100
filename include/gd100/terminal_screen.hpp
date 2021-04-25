@@ -5,6 +5,8 @@
 
 #include "glyph.hpp"
 
+namespace gd100 {
+
 class terminal_screen {
 private:
     extend m_size;
@@ -26,5 +28,7 @@ public:
 
     extend size() const;
 };
+
+} // gd100::
 
 #endif // header guard

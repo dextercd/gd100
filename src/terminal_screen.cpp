@@ -1,5 +1,7 @@
 #include <gd100/terminal_screen.hpp>
 
+namespace gd100 {
+
 terminal_screen::terminal_screen(extend screen_sz)
     : m_size{screen_sz}
     , data{new glyph[m_size.width * m_size.height]{}}
@@ -30,3 +32,5 @@ extend terminal_screen::size() const
 {
     return m_size;
 }
+
+} // gd100::

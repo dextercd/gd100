@@ -6,6 +6,8 @@
 #include "bit_container.hpp"
 #include "terminal_screen.hpp"
 
+namespace gd100 {
+
 enum cursor_state_bit {
     wrap_next = 1 << 0,
 };
@@ -45,5 +47,7 @@ public:
 private:
     position clamp_pos(position p);
 };
+
+} // gd100::
 
 #endif // header guard

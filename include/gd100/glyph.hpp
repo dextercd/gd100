@@ -4,6 +4,8 @@
 #include "bit_container.hpp"
 #include "position.hpp"
 
+namespace gd100 {
+
 enum class glyph_attr_bit {
     text_wraps = 1 << 0,
     wide       = 1 << 1,
@@ -30,5 +32,7 @@ struct glyph {
     glyph_style style;
     code_point code;
 };
+
+} // gd100::
 
 #endif // header guard

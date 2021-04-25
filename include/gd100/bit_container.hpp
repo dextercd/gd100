@@ -3,6 +3,8 @@
 
 #include <type_traits>
 
+namespace gd100 {
+
 template<class bit_type>
 class bit_container
 {
@@ -41,5 +43,7 @@ public:
         return !(left == right);
     }
 };
+
+} // gd100::
 
 #endif // header guard

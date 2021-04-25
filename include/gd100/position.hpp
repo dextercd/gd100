@@ -3,6 +3,8 @@
 
 #include <iosfwd>
 
+namespace gd100 {
+
 struct position {
     int x;
     int y;
@@ -19,5 +21,7 @@ struct position {
 };
 
 std::ostream& operator<<(std::ostream&, position);
+
+} // gd100::
 
 #endif // header guard

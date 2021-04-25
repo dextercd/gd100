@@ -2,17 +2,17 @@
 
 #include <gd100/terminal.hpp>
 
-terminal test_term()
+gd100::terminal test_term()
 {
     // non square so that mixups with width/height will be caught.
-    return terminal{{5, 4}};
+    return gd100::terminal{{5, 4}};
 }
 
 TEST_CASE("Terminal writing", "[write]") {
     auto t = test_term();
 
     SECTION("After initialisation") {
-        REQUIRE(t.cursor.pos == position{0, 0});
+        REQUIRE(t.cursor.pos == gd100::position{0, 0});
         REQUIRE(t.screen.get_line(3)[4].code == 0);
     }
 
@@ -20,7 +20,7 @@ TEST_CASE("Terminal writing", "[write]") {
         t.write_char('A');
 
         REQUIRE(t.screen.get_glyph({0, 0}).code == 'A');
-        REQUIRE(t.cursor.pos == position{1, 0});
+        REQUIRE(t.cursor.pos == gd100::position{1, 0});
     }
 
     SECTION("Cursor only goes to the next line when placing character there") {
@@ -29,12 +29,12 @@ TEST_CASE("Terminal writing", "[write]") {
         t.write_char('D'); t.write_char('E');
 
         REQUIRE(t.screen.get_glyph({4, 0}).code == 'E');
-        REQUIRE(t.cursor.pos == position{4, 0});
+        REQUIRE(t.cursor.pos == gd100::position{4, 0});
 
         t.write_char('F');
 
         REQUIRE(t.screen.get_glyph({0, 1}).code == 'F');
-        REQUIRE(t.cursor.pos == position{1, 1});
+        REQUIRE(t.cursor.pos == gd100::position{1, 1});
     }
 }
 
@@ -52,10 +52,10 @@ TEST_CASE("Terminal scrolling", "[scroll]") {
         write_full_line();
         write_full_line();
 
-        REQUIRE(t.cursor.pos == position{4, 3});
+        REQUIRE(t.cursor.pos == gd100::position{4, 3});
 
         t.write_char('a');
 
-        REQUIRE(t.cursor.pos == position{1, 3});
+        REQUIRE(t.cursor.pos == gd100::position{1, 3});
     }
 }

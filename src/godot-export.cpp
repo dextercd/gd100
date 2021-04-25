@@ -15,13 +15,13 @@ godot_gdnative_ext_nativescript_api_struct const* nativescript_api = nullptr;
 
 void* create_terminal(godot_object* const instance, void* const method_data)
 {
-    auto term = std::make_unique<terminal>();
+    auto term = std::make_unique<gd100::terminal>();
     return term.release();
 }
 
 void destroy_terminal(godot_object* const instance, void* const method_data, void* user_data)
 {
-    auto term = std::unique_ptr<terminal>{(terminal*)user_data};
+    auto term = std::unique_ptr<gd100::terminal>{(gd100::terminal*)user_data};
 }
 
 /* Looks in api->extensions for an extension that matches the argument type.

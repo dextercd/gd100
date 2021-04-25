@@ -3,6 +3,8 @@
 
 #include <gd100/terminal.hpp>
 
+namespace gd100 {
+
 int code_point_width(code_point)
 {
     return 1;
@@ -146,3 +148,5 @@ position terminal::clamp_pos(position p)
 
     return p;
 }
+
+} // gd100::
