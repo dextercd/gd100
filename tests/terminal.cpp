@@ -78,3 +78,36 @@ TEST_CASE("Terminal driven via decode", "[terminal-decode]") {
         REQUIRE(t.cursor.pos == gd100::position{2, 2});
     }
 }
+
+TEST_CASE("Backspace", "[backspace]") {
+    auto t = test_term();
+
+    SECTION("Backspace at the start of a line") {
+        REQUIRE(t.cursor.pos == gd100::position{0, 0});
+        t.process_bytes("\b", 1);
+        REQUIRE(t.cursor.pos == gd100::position{0, 0});
+
+        t.process_bytes("\n\b", 2);
+        REQUIRE(t.cursor.pos == gd100::position{0, 1});
+    }
+
+    SECTION("Backspacing over a character") {
+        t.process_bytes("Hey", 3);
+        REQUIRE(t.cursor.pos == gd100::position{3, 0});
+        t.process_bytes("\b", 1);
+        REQUIRE(t.cursor.pos == gd100::position{2, 0});
+        t.process_bytes("\b\b\b\b\b", 5);
+        REQUIRE(t.cursor.pos == gd100::position{0, 0});
+
+        REQUIRE(t.screen.get_glyph({1, 0}).code == 'e');
+    }
+
+    SECTION("Backspace onto new line") {
+        t.process_bytes("12345", 5); // no space left in the first line
+        REQUIRE(t.cursor.pos == gd100::position{4, 0});
+
+        // some shells use this trick to move the cursor to the next line
+        t.process_bytes(" \b", 2);
+        REQUIRE(t.cursor.pos == gd100::position{0, 1});
+    }
+}
