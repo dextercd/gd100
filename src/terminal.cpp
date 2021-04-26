@@ -41,11 +41,11 @@ void terminal::write_char(code_point ch)
 
     set_char(ch, cursor.style, cursor.pos);
 
-    for (auto x{cursor.pos.x + 1};
-         x < screen.size().width && x < cursor.pos.x + width;
-         ++x)
-    {
-        gl[x].style.mode.set(glyph_attr_bit::wide);
+    if (width == 2) {
+        gl[0].style.mode.set(glyph_attr_bit::wide);
+        if (cursor.pos.x + 1 < screen.size().width) {
+            gl[1].style.mode = glyph_attribute{glyph_attr_bit::wdummy};
+        }
     }
 
     if (cursor.pos.x + width < screen.size().width) {
@@ -72,6 +72,7 @@ void terminal::set_char(code_point ch, glyph_style style, position pos)
 {
     mark_dirty(pos.y);
     screen.get_glyph(pos) = {style, ch};
+    // TODO: implement wide character overwriting properly.
 }
 
 glyph* terminal::glyph_at_cursor()

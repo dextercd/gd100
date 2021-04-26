@@ -11,6 +11,7 @@ namespace gd100 {
 enum class glyph_attr_bit {
     text_wraps = 1 << 0,
     wide       = 1 << 1,
+    wdummy     = 1 << 2, // space occupied by previous wide character
 };
 
 class glyph_attribute : public bit_container<glyph_attr_bit> {
