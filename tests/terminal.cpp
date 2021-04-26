@@ -111,3 +111,59 @@ TEST_CASE("Backspace", "[backspace]") {
         REQUIRE(t.cursor.pos == gd100::position{0, 1});
     }
 }
+
+TEST_CASE("Newline handling", "[newline]") {
+    auto t = test_term();
+
+    SECTION("Newline basics") {
+        t.process_bytes("\n", 1);
+        REQUIRE(t.cursor.pos == gd100::position{0, 1});
+        t.process_bytes("\n", 1);
+        REQUIRE(t.cursor.pos == gd100::position{0, 2});
+        t.process_bytes("\n", 1);
+        REQUIRE(t.cursor.pos == gd100::position{0, 3});
+        t.process_bytes("\n\n\n", 3); // Should start scrolling and leaving cursor alone
+        REQUIRE(t.cursor.pos == gd100::position{0, 3});
+    }
+
+    SECTION("Newline in middle") {
+        t.process_bytes("123", 3);
+        t.process_bytes("\n", 1);
+        REQUIRE(t.cursor.pos == gd100::position{3, 1});
+    }
+
+    SECTION("Newline at eol") {
+        t.process_bytes("12345", 5);
+        t.process_bytes("\n", 1);
+        REQUIRE(t.cursor.pos == gd100::position{4, 1});
+    }
+
+    SECTION("Newline and carriage return") {
+        t.process_bytes("123", 3);
+        SECTION("CRLF") {
+            t.process_bytes("\r\n", 2);
+            REQUIRE(t.cursor.pos == gd100::position{0, 1});
+        }
+        SECTION("LFCR") {
+            t.process_bytes("\n\r", 2);
+            REQUIRE(t.cursor.pos == gd100::position{0, 1});
+        }
+    }
+}
+
+TEST_CASE("Carriage return handling", "[carriage-return]") {
+    auto t = test_term();
+
+    t.process_bytes("abc\r", 4);
+    REQUIRE(t.cursor.pos == gd100::position{0, 0});
+    REQUIRE(t.screen.get_glyph({0, 0}).code == 'a');
+    REQUIRE(t.screen.get_glyph({1, 0}).code == 'b');
+
+    t.process_bytes("1", 1);
+    REQUIRE(t.cursor.pos == gd100::position{1, 0});
+    REQUIRE(t.screen.get_glyph({0, 0}).code == '1');
+    REQUIRE(t.screen.get_glyph({1, 0}).code == 'b');
+
+    t.process_bytes("\r", 1);
+    REQUIRE(t.cursor.pos == gd100::position{0, 0});
+}
