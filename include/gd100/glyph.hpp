@@ -13,7 +13,9 @@ enum class glyph_attr_bit {
     wide       = 1 << 1,
 };
 
-class glyph_attribute : public bit_container<glyph_attr_bit> {};
+class glyph_attribute : public bit_container<glyph_attr_bit> {
+    using bit_container::bit_container;
+};
 
 class color {};
 
