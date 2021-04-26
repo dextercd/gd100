@@ -169,8 +169,23 @@ int terminal::process_bytes(const char* bytes, int length)
 void terminal::process_instruction(terminal_instruction inst)
 {
     switch(inst.type) {
+        case instruction_type::none:
+            break;
+
         case instruction_type::write_char:
             write_char(inst.write_char.code);
+            break;
+
+        case instruction_type::line_feed:
+            newline(false);
+            break;
+
+        case instruction_type::carriage_return:
+            move_cursor({0, cursor.pos.y});
+            break;
+
+        case instruction_type::backspace:
+            move_cursor_forward(-1);
             break;
     }
 }
