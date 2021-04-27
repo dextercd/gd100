@@ -24,7 +24,8 @@ target_compile_features(terminal
 
 
 add_library(godot-terminal MODULE
-    src/godot-export.cpp)
+    src/godot-export.cpp
+    src/program_terminal_manager.cpp)
 
 include(GenerateExportHeader)
 generate_export_header(godot-terminal
