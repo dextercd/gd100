@@ -3,6 +3,7 @@
 #include <locale>
 #include <iostream>
 #include <thread>
+#include <string>
 
 #include <gdnative_api_struct.gen.h>
 
@@ -116,6 +117,7 @@ public:
     gd100::terminal terminal;
     int master_descriptor;
     godot_object* instance;
+    std::string write_buffer;
 
     terminal_program(gd100::terminal t, int md, godot_object* i)
         : terminal{std::move(t)}
@@ -126,7 +128,10 @@ public:
 
     void handle_bytes(char* bytes, std::size_t count) override
     {
-        terminal.process_bytes(bytes, count);
+        write_buffer.append(bytes, count);
+        auto processed = terminal.process_bytes(write_buffer.c_str(), write_buffer.size());
+        write_buffer.erase(0, processed);
+
         auto lines = get_lines(&terminal);
         const auto* args = &lines;
         object_emit_signal_deferred(
@@ -206,7 +211,7 @@ terminal_program* start_program(godot_object* const instance)
 
     close(slavefd);
 
-    auto const size = gd100::extend{80, 24};
+    auto const size = gd100::extend{90, 30};
 
 
     auto const winsz = winsize{
@@ -216,7 +221,7 @@ terminal_program* start_program(godot_object* const instance)
     };
 
     if(ioctl(masterfd, TIOCSWINSZ, &winsz))
-        throw std::runtime_error{"errrreer"};
+        throw std::runtime_error{"Couldn't set window size."};
 
     auto program = std::make_unique<terminal_program>(
         gd100::terminal{size},

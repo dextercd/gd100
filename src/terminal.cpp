@@ -118,6 +118,24 @@ void terminal::clear_lines(int line_beg, int line_end)
     mark_dirty(line_beg, line_end);
 }
 
+void terminal::clear(position start, position end)
+{
+    start = clamp_pos(start);
+    end = clamp_pos(end);
+
+    auto const fill_glyph = glyph{
+        glyph_style{cursor.style.fg, cursor.style.bg, {}},
+        code_point{0}
+    };
+
+    std::fill(
+        screen.get_line(start.y) + start.x,
+        screen.get_line(end.y) + end.x + 1,
+        fill_glyph);
+
+    mark_dirty(start.y, end.y);
+}
+
 void terminal::dump()
 {
     for (int y = 0; y < screen.size().height; ++y) {
@@ -186,6 +204,31 @@ void terminal::process_instruction(terminal_instruction inst)
 
         case instruction_type::backspace:
             move_cursor_forward(-1);
+            break;
+
+        case instruction_type::clear_to_bottom:
+            clear(cursor.pos, {screen.size().width - 1, screen.size().height - 1});
+            break;
+
+        case instruction_type::clear_from_top:
+            clear({0, 0}, cursor.pos);
+            break;
+
+        case instruction_type::clear_screen:
+            clear({0, 0}, {screen.size().width - 1, screen.size().height - 1});
+            break;
+
+        case instruction_type::clear_to_end:
+            clear(cursor.pos, {screen.size().width - 1, cursor.pos.y});
+
+        case instruction_type::clear_from_begin:
+            clear({0, cursor.pos.y}, cursor.pos);
+
+        case instruction_type::clear_line:
+            clear({0, cursor.pos.y}, {screen.size().width - 1, cursor.pos.y});
+
+        case instruction_type::position_cursor:
+            move_cursor(inst.position_cursor.pos);
             break;
     }
 }
