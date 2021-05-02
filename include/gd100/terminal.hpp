@@ -5,28 +5,17 @@
 
 #include "bit_container.hpp"
 #include "terminal_screen.hpp"
-#include "terminal_decoder.hpp"
+#include "terminal_data.hpp"
 
 namespace gd100 {
 
-enum cursor_state_bit {
-    wrap_next = 1 << 0,
-};
-
-class cursor_state : public bit_container<cursor_state_bit> {
-    using bit_container::bit_container;
-};
-
-struct terminal_cursor {
-    glyph_style style;
-    cursor_state state;
-    position pos;
-};
+struct terminal_instruction;
 
 class terminal {
 public:
     terminal_cursor cursor{};
     terminal_screen screen{};
+    terminal_mode mode{};
 
 public:
     terminal() = default;
@@ -48,6 +37,7 @@ public:
     void clear(position start, position end);
     int process_bytes(const char* bytes, int length);
     void process_instruction(terminal_instruction inst);
+    void delete_chars(int count);
     void dump();
 
 private:

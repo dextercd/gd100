@@ -2,6 +2,8 @@
 #define GDTERM_TERMINAL_DECODER_HPP
 
 #include "glyph.hpp"
+#include "position.hpp"
+#include "terminal_data.hpp"
 
 namespace gd100 {
 
@@ -21,10 +23,19 @@ enum class instruction_type {
     clear_line,
 
     position_cursor,
+    move_cursor,
+
+    change_mode_bits,
+
+    delete_chars,
+};
+
+enum class direction {
+    up, down, forward, back
 };
 
 template<class I>
-instruction_type instruction_number;
+auto instruction_number = nullptr;
 
 struct none_instruction {};
 
@@ -79,6 +90,26 @@ struct position_cursor_instruction {
 template<> constexpr inline
 auto instruction_number<position_cursor_instruction> = instruction_type::position_cursor;
 
+struct move_cursor_instruction {
+    int count;
+    direction dir;
+};
+template<> constexpr inline
+auto instruction_number<move_cursor_instruction> = instruction_type::move_cursor;
+
+struct change_mode_bits_instruction {
+    bool set;
+    terminal_mode mode;
+};
+template<> constexpr inline
+auto instruction_number<change_mode_bits_instruction> = instruction_type::change_mode_bits;
+
+struct delete_chars_instruction {
+    int count;
+};
+template<> constexpr inline
+auto instruction_number<delete_chars_instruction> = instruction_type::delete_chars;
+
 struct terminal_instruction {
     instruction_type type;
 
@@ -92,6 +123,9 @@ struct terminal_instruction {
     union /* data */ {
         write_char_instruction write_char;
         position_cursor_instruction position_cursor;
+        change_mode_bits_instruction change_mode_bits;
+        move_cursor_instruction move_cursor;
+        delete_chars_instruction delete_chars;
     };
 
 private:
@@ -116,6 +150,21 @@ private:
     void set_data(position_cursor_instruction i)
     {
         position_cursor = i;
+    }
+
+    void set_data(change_mode_bits_instruction i)
+    {
+        change_mode_bits = i;
+    }
+
+    void set_data(move_cursor_instruction i)
+    {
+        move_cursor = i;
+    }
+
+    void set_data(delete_chars_instruction i)
+    {
+        delete_chars = i;
     }
 };
 

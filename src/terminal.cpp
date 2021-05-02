@@ -34,6 +34,13 @@ void terminal::write_char(code_point ch)
         gl = glyph_at_cursor();
     }
 
+    if (mode.is_set(terminal_mode_bit::insert)) {
+        std::move_backward(
+            screen.get_line(cursor.pos.y) + cursor.pos.x,
+            screen.get_line(cursor.pos.y) + screen.size().width - width,
+            screen.get_line(cursor.pos.y) + screen.size().width);
+    }
+
     if (cursor.pos.x + width > screen.size().width) {
         newline(true);
         gl = glyph_at_cursor();
@@ -136,6 +143,18 @@ void terminal::clear(position start, position end)
     mark_dirty(start.y, end.y);
 }
 
+void terminal::delete_chars(int count)
+{
+    auto cursor_to_end = screen.size().width - cursor.pos.x;
+    std::move(
+        screen.get_line(cursor.pos.y) + cursor.pos.x + std::min(cursor_to_end, count),
+        screen.get_line(cursor.pos.y) + screen.size().width,
+        screen.get_line(cursor.pos.y) + cursor.pos.x);
+
+    clear({screen.size().width - 1 - count, cursor.pos.y},
+          {screen.size().width - 1, cursor.pos.y});
+}
+
 void terminal::dump()
 {
     for (int y = 0; y < screen.size().height; ++y) {
@@ -220,15 +239,47 @@ void terminal::process_instruction(terminal_instruction inst)
 
         case instruction_type::clear_to_end:
             clear(cursor.pos, {screen.size().width - 1, cursor.pos.y});
+            break;
 
         case instruction_type::clear_from_begin:
             clear({0, cursor.pos.y}, cursor.pos);
+            break;
 
         case instruction_type::clear_line:
             clear({0, cursor.pos.y}, {screen.size().width - 1, cursor.pos.y});
+            break;
 
         case instruction_type::position_cursor:
             move_cursor(inst.position_cursor.pos);
+            break;
+
+        case instruction_type::move_cursor:
+            switch(inst.move_cursor.dir) {
+                case direction::up:
+                    move_cursor({cursor.pos.x, cursor.pos.y - inst.move_cursor.count});
+                    break;
+                case direction::down:
+                    move_cursor({cursor.pos.x, cursor.pos.y + inst.move_cursor.count});
+                    break;
+                case direction::forward:
+                    move_cursor({cursor.pos.x + inst.move_cursor.count, cursor.pos.y});
+                    break;
+                case direction::back:
+                    move_cursor({cursor.pos.x + inst.move_cursor.count, cursor.pos.y});
+                    break;
+            }
+            break;
+
+        case instruction_type::change_mode_bits:
+            if (inst.change_mode_bits.set) {
+                mode.set(inst.change_mode_bits.mode);
+            } else {
+                mode.unset(inst.change_mode_bits.mode);
+            }
+            break;
+
+        case instruction_type::delete_chars:
+            delete_chars(inst.delete_chars.count);
             break;
     }
 }

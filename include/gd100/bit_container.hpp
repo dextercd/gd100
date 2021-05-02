@@ -13,24 +13,24 @@ class bit_container
 
 public:
     bit_container() = default;
-    explicit bit_container(bit_type bit)
+    bit_container(bit_type bit)
     {
-        set(bit);
+        data = static_cast<data_type>(bit);
     }
 
-    void set(bit_type bit)
+    void set(bit_container bits)
     {
-        data |= static_cast<data_type>(bit);
+        data |= bits.data;
     }
 
-    bool is_set(bit_type bit)
+    bool is_set(bit_container bits)
     {
-        return data & static_cast<data_type>(bit);
+        return (data & bits.data) == bits.data;
     }
 
-    void unset(bit_type bit)
+    void unset(bit_container bits)
     {
-        data &= ~static_cast<data_type>(bit);
+        data &= ~bits.data;
     }
 
     friend bool operator==(bit_container left, bit_container right)

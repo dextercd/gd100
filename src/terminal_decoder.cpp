@@ -93,6 +93,9 @@ struct decoder {
             default:
                 return {2, none_instruction()};
 
+            case 'M':
+                return {2, none_instruction()}; // TODO: implement scroll up
+
             case '[':
                 return decode_csi();
         }
@@ -280,8 +283,8 @@ struct decoder {
                 return {
                     consumed,
                     position_cursor_instruction{{
-                        std::max(0, get_number(0) - 1),
-                        std::max(0, get_number(1) - 1)
+                        std::max(0, get_number(1) - 1),
+                        std::max(0, get_number(0) - 1)
                     }}
                 };
 
@@ -298,6 +301,49 @@ struct decoder {
                         return {consumed, clear_line_instruction{}};
                 }
             } break;
+
+            case 'l':
+            case 'h': {
+                bool set = final == 'h';
+                terminal_mode mode;
+                for (int i = 0; true; ++i) {
+                    auto number = get_number(i, -1);
+                    if (number == -1)
+                        break;
+
+                    switch(number) {
+                        case 4:
+                            mode.set(terminal_mode_bit::insert);
+                    }
+                }
+
+                return {consumed, change_mode_bits_instruction{set, mode}};
+            }
+
+            case 'A':
+                return {
+                    consumed,
+                    move_cursor_instruction{get_number(0, 1), direction::up}};
+
+            case 'B':
+                return {
+                    consumed,
+                    move_cursor_instruction{get_number(0, 1), direction::down}};
+
+            case 'C':
+                return {
+                    consumed,
+                    move_cursor_instruction{get_number(0, 1), direction::forward}};
+
+            case 'D':
+                return {
+                    consumed,
+                    move_cursor_instruction{get_number(0, 1), direction::back}};
+
+            case 'P':
+                return {
+                    consumed,
+                    delete_chars_instruction{get_number(0, 1)}};
         }
     }
 
