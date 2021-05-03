@@ -235,7 +235,7 @@ int terminal::process_bytes(const char* bytes, int length)
 {
     auto decoded = decode(bytes, length);
     if (decoded.bytes_consumed == 0)
-        return length;
+        return 0;
 
     process_instruction(decoded.instruction);
 
