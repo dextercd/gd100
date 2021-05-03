@@ -111,19 +111,24 @@ void terminal::scroll_up(int keep_top, int count)
     mark_dirty(move_to, move_end);
 }
 
-void terminal::scroll_down(int count)
+void terminal::scroll_down(int keep_top, int count)
 {
     auto const height = screen.size().height;
-    count = std::clamp(count, 0, height);
+
+    keep_top = std::clamp(keep_top, 0, height);
+    count = std::clamp(count, 0, height - keep_top);
+
+    auto const move_count = height - keep_top - count;
+    auto const line_end = keep_top + move_count;
 
     std::move_backward(
-        screen.get_line(0),
-        screen.get_line(height - count),
+        screen.get_line(keep_top),
+        screen.get_line(line_end),
         screen.get_line(height));
 
-    clear_lines(0, count);
+    clear_lines(keep_top, keep_top + count);
 
-    mark_dirty(0, height);
+    mark_dirty(keep_top, height);
 }
 
 void terminal::clear_lines(int line_beg, int line_end)
@@ -168,6 +173,29 @@ void terminal::delete_chars(int count)
 
     clear({screen.size().width - 1 - count, cursor.pos.y},
           {screen.size().width - 1, cursor.pos.y});
+}
+
+void terminal::insert_blanks(int count)
+{
+    if (count <= 0)
+        return;
+
+    auto const this_line = screen.get_line(cursor.pos.y);
+    auto const width = screen.size().width;
+
+    count = std::clamp(count, 1, width - cursor.pos.x);
+
+    std::move_backward(
+        this_line + cursor.pos.x,
+        this_line + screen.size().width - count,
+        this_line + screen.size().width);
+
+    clear(cursor.pos, {cursor.pos.x + count - 1, cursor.pos.y});
+}
+
+void terminal::insert_newline(int count)
+{
+    scroll_down(cursor.pos.y, count);
 }
 
 void terminal::dump()
@@ -303,6 +331,15 @@ void terminal::process_instruction(terminal_instruction inst)
             } else {
                 move_cursor({cursor.pos.x, cursor.pos.y - 1});
             }
+            break;
+
+        case instruction_type::insert_blanks:
+            insert_blanks(inst.insert_blanks.count);
+            break;
+
+        case instruction_type::insert_newline:
+            insert_newline(inst.insert_newline.count);
+            break;
     }
 }
 

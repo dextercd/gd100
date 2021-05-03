@@ -347,6 +347,16 @@ struct decoder {
                 return {
                     consumed,
                     delete_chars_instruction{get_number(0, 1)}};
+
+            case '@':
+                return {
+                    consumed,
+                    insert_blanks_instruction{get_number(0, 1)}};
+
+            case 'L':
+                return {
+                    consumed,
+                    insert_newline_instruction{get_number(0, 1)}};
         }
     }
 

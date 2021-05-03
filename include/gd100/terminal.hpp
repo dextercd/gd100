@@ -33,12 +33,14 @@ public:
     void mark_dirty(int line);
     void mark_dirty(int line_beg, int line_end);
     void scroll_up(int keep_top=0, int count=1);
-    void scroll_down(int count=1);
+    void scroll_down(int keep_top=0, int count=1);
     void clear_lines(int line_beg, int line_end);
     void clear(position start, position end);
     int process_bytes(const char* bytes, int length);
     void process_instruction(terminal_instruction inst);
     void delete_chars(int count);
+    void insert_blanks(int count);
+    void insert_newline(int count);
     void dump();
 
 private:

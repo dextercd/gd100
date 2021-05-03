@@ -30,6 +30,9 @@ enum class instruction_type {
     delete_chars,
 
     reverse_line_feed,
+
+    insert_blanks,
+    insert_newline,
 };
 
 enum class direction {
@@ -116,6 +119,18 @@ struct reverse_line_feed_instruction {};
 template<> constexpr inline
 auto instruction_number<reverse_line_feed_instruction> = instruction_type::reverse_line_feed;
 
+struct insert_blanks_instruction {
+    int count;
+};
+template<> constexpr inline
+auto instruction_number<insert_blanks_instruction> = instruction_type::insert_blanks;
+
+struct insert_newline_instruction {
+    int count;
+};
+template<> constexpr inline
+auto instruction_number<insert_newline_instruction> = instruction_type::insert_newline;
+
 struct terminal_instruction {
     instruction_type type;
 
@@ -132,6 +147,8 @@ struct terminal_instruction {
         change_mode_bits_instruction change_mode_bits;
         move_cursor_instruction move_cursor;
         delete_chars_instruction delete_chars;
+        insert_blanks_instruction insert_blanks;
+        insert_newline_instruction insert_newline;
     };
 
 private:
@@ -174,6 +191,16 @@ private:
     }
 
     void set_data(reverse_line_feed_instruction) {}
+
+    void set_data(insert_blanks_instruction i)
+    {
+        insert_blanks = i;
+    }
+
+    void set_data(insert_newline_instruction i)
+    {
+        insert_newline = i;
+    }
 };
 
 struct decode_result {
