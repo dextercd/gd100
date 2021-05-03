@@ -116,8 +116,8 @@ godot_variant get_line(gd100::terminal const* const term, int const line)
 
 godot_variant get_lines(gd100::terminal* term)
 {
-    godot_dictionary topdict;
-    api->godot_dictionary_new(&topdict);
+    godot_dictionary line_dict;
+    api->godot_dictionary_new(&line_dict);
 
     for (int line = 0; line != term->screen.size().height; ++line) {
 
@@ -126,15 +126,66 @@ godot_variant get_lines(gd100::terminal* term)
 
         godot_variant line_data = get_line(term ,line);
 
-        api->godot_dictionary_set(&topdict, &line_number, &line_data);
+        api->godot_dictionary_set(&line_dict, &line_number, &line_data);
 
         api->godot_variant_destroy(&line_number);
         api->godot_variant_destroy(&line_data);
     }
 
     godot_variant ret;
-    api->godot_variant_new_dictionary(&ret, &topdict);
-    api->godot_dictionary_destroy(&topdict);
+    api->godot_variant_new_dictionary(&ret, &line_dict);
+    api->godot_dictionary_destroy(&line_dict);
+
+    return ret;
+}
+
+godot_variant get_cursor(gd100::terminal const* const term)
+{
+    godot_vector2 cursor_pos;
+    api->godot_vector2_new(&cursor_pos, term->cursor.pos.x, term->cursor.pos.y);
+
+    godot_variant ret;
+    api->godot_variant_new_vector2(&ret, &cursor_pos);
+
+    return ret;
+}
+
+godot_variant get_terminal_data(gd100::terminal* term)
+{
+    godot_dictionary term_dict;
+    api->godot_dictionary_new(&term_dict);
+
+    godot_variant lines_key;
+    {
+        godot_string lines_key_string;
+        api->godot_string_new_with_wide_string(&lines_key_string, L"lines", 5);
+        api->godot_variant_new_string(&lines_key, &lines_key_string);
+        api->godot_string_destroy(&lines_key_string);
+    }
+
+    godot_variant lines_data = get_lines(term);
+
+    api->godot_dictionary_set(&term_dict, &lines_key, &lines_data);
+    api->godot_variant_destroy(&lines_data);
+    api->godot_variant_destroy(&lines_key);
+
+    godot_variant cursor_key;
+    {
+        godot_string cursor_key_string;
+        api->godot_string_new_with_wide_string(&cursor_key_string, L"cursor", 6);
+        api->godot_variant_new_string(&cursor_key, &cursor_key_string);
+        api->godot_string_destroy(&cursor_key_string);
+    }
+
+    godot_variant cursor_data = get_cursor(term);
+
+    api->godot_dictionary_set(&term_dict, &cursor_key, &cursor_data);
+    api->godot_variant_destroy(&cursor_data);
+    api->godot_variant_destroy(&cursor_key);
+
+    godot_variant ret;
+    api->godot_variant_new_dictionary(&ret, &term_dict);
+    api->godot_dictionary_destroy(&term_dict);
 
     return ret;
 }
@@ -159,13 +210,15 @@ public:
         auto processed = terminal.process_bytes(write_buffer.c_str(), write_buffer.size());
         write_buffer.erase(0, processed);
 
-        auto lines = get_lines(&terminal);
-        const auto* args = &lines;
+        auto data = get_terminal_data(&terminal);
+        const auto* args = &data;
         object_emit_signal_deferred(
             instance,
             api->godot_string_chars_to_utf8("terminal_updated"),
             1,
             &args);
+
+        api->godot_variant_destroy(&data);
 
         std::cerr << "Received " << count << " bytes.\n";
         for(char* b = bytes; b != bytes + count; ++b)
