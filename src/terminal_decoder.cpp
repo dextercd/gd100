@@ -68,6 +68,9 @@ struct decoder {
             case '\b':
                 return {1, backspace_instruction{}};
 
+            case '\a':
+                return {1, none_instruction{}};
+
             case esc:
                 return decode_escape();
         }
