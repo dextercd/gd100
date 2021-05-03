@@ -95,10 +95,10 @@ void terminal::mark_dirty(int line_beg, int line_end)
 {
 }
 
-void terminal::scroll_up(int keep_top, int down)
+void terminal::scroll_up(int keep_top, int count)
 {
     int move_to = std::clamp(keep_top, 0, screen.size().height);
-    int move_start = std::clamp(move_to + down, 0, screen.size().height);
+    int move_start = std::clamp(move_to + count, 0, screen.size().height);
     int move_end = screen.size().height;
 
     std::move(
@@ -106,9 +106,24 @@ void terminal::scroll_up(int keep_top, int down)
         screen.get_line(move_end), // pointer past last glyph
         screen.get_line(move_to));
 
-    clear_lines(move_end - down, move_end);
+    clear_lines(move_end - count, move_end);
 
     mark_dirty(move_to, move_end);
+}
+
+void terminal::scroll_down(int count)
+{
+    auto const height = screen.size().height;
+    count = std::clamp(count, 0, height);
+
+    std::move_backward(
+        screen.get_line(0),
+        screen.get_line(height - count),
+        screen.get_line(height));
+
+    clear_lines(0, count);
+
+    mark_dirty(0, height);
 }
 
 void terminal::clear_lines(int line_beg, int line_end)
@@ -281,6 +296,13 @@ void terminal::process_instruction(terminal_instruction inst)
         case instruction_type::delete_chars:
             delete_chars(inst.delete_chars.count);
             break;
+
+        case instruction_type::reverse_line_feed:
+            if (cursor.pos.y == 0) {
+                scroll_down();
+            } else {
+                move_cursor({cursor.pos.x, cursor.pos.y - 1});
+            }
     }
 }
 

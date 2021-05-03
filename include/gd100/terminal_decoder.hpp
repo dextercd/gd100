@@ -28,6 +28,8 @@ enum class instruction_type {
     change_mode_bits,
 
     delete_chars,
+
+    reverse_line_feed,
 };
 
 enum class direction {
@@ -110,6 +112,10 @@ struct delete_chars_instruction {
 template<> constexpr inline
 auto instruction_number<delete_chars_instruction> = instruction_type::delete_chars;
 
+struct reverse_line_feed_instruction {};
+template<> constexpr inline
+auto instruction_number<reverse_line_feed_instruction> = instruction_type::reverse_line_feed;
+
 struct terminal_instruction {
     instruction_type type;
 
@@ -166,6 +172,8 @@ private:
     {
         delete_chars = i;
     }
+
+    void set_data(reverse_line_feed_instruction) {}
 };
 
 struct decode_result {

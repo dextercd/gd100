@@ -97,7 +97,7 @@ struct decoder {
                 return {2, none_instruction()};
 
             case 'M':
-                return {2, none_instruction()}; // TODO: implement scroll up
+                return {2, reverse_line_feed_instruction{}};
 
             case '[':
                 return decode_csi();
