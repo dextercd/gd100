@@ -67,42 +67,69 @@ godot_variant_call_error object_emit_signal_deferred(
     return error;
 }
 
+godot_variant get_glyph(gd100::terminal const* const term, int const row, int const column)
+{
+    godot_dictionary glyph_dict;
+    api->godot_dictionary_new(&glyph_dict);
+
+    godot_variant code_point_key;
+    {
+        godot_string code_point_key_string;
+        api->godot_string_new_with_wide_string(&code_point_key_string, L"code", 4);
+        api->godot_variant_new_string(&code_point_key, &code_point_key_string);
+        api->godot_string_destroy(&code_point_key_string);
+    }
+
+    godot_variant code_point;
+    api->godot_variant_new_int(&code_point, term->screen.get_glyph({column, row}).code);
+
+    api->godot_dictionary_set(&glyph_dict, &code_point_key, &code_point);
+    api->godot_variant_destroy(&code_point_key);
+    api->godot_variant_destroy(&code_point);
+
+    godot_variant ret;
+    api->godot_variant_new_dictionary(&ret, &glyph_dict);
+    api->godot_dictionary_destroy(&glyph_dict);
+
+    return ret;
+}
+
+godot_variant get_line(gd100::terminal const* const term, int const line)
+{
+    godot_array linearr;
+    api->godot_array_new(&linearr);
+
+    auto const width = term->screen.size().width;
+
+    for(int col = 0; col != width; ++col) {
+        auto glyph = get_glyph(term, line, col);
+        api->godot_array_push_back(&linearr, &glyph);
+        api->godot_variant_destroy(&glyph);
+    }
+
+    godot_variant ret;
+    api->godot_variant_new_array(&ret, &linearr);
+    api->godot_array_destroy(&linearr);
+
+    return ret;
+}
+
 godot_variant get_lines(gd100::terminal* term)
 {
     godot_dictionary topdict;
     api->godot_dictionary_new(&topdict);
 
     for (int line = 0; line != term->screen.size().height; ++line) {
-        godot_array linearr;
-        api->godot_array_new(&linearr);
 
-        for(int i = 0; i != term->screen.size().width; ++i) {
-            godot_dictionary glyph_data;
-            api->godot_dictionary_new(&glyph_data);
+        godot_variant line_number;
+        api->godot_variant_new_int(&line_number, line);
 
-            godot_string code_point_key;
-            api->godot_string_new_with_wide_string(&code_point_key, L"code", 4);
-            godot_variant code_point_key_var;
-            api->godot_variant_new_string(&code_point_key_var, &code_point_key);
+        godot_variant line_data = get_line(term ,line);
 
-            godot_variant gcode;
-            api->godot_variant_new_int(&gcode, term->screen.get_glyph({i, line}).code);
+        api->godot_dictionary_set(&topdict, &line_number, &line_data);
 
-            api->godot_dictionary_set(&glyph_data, &code_point_key_var, &gcode);
-
-            godot_variant glyph_var;
-            api->godot_variant_new_dictionary(&glyph_var, &glyph_data);
-
-            api->godot_array_push_back(&linearr, &glyph_var);
-        }
-
-        godot_variant gline;
-        api->godot_variant_new_int(&gline, line);
-
-        godot_variant linevar;
-        api->godot_variant_new_array(&linevar, &linearr);
-
-        api->godot_dictionary_set(&topdict, &gline, &linevar);
+        api->godot_variant_destroy(&line_number);
+        api->godot_variant_destroy(&line_data);
     }
 
     godot_variant ret;
