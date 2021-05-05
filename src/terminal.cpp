@@ -325,6 +325,10 @@ void terminal::process_instruction(terminal_instruction inst)
             delete_chars(inst.delete_chars.count);
             break;
 
+        case instruction_type::delete_lines:
+            scroll_up(cursor.pos.y, inst.delete_lines.count);
+            break;
+
         case instruction_type::reverse_line_feed:
             if (cursor.pos.y == 0) {
                 scroll_down();

@@ -348,6 +348,11 @@ struct decoder {
                     consumed,
                     delete_chars_instruction{get_number(0, 1)}};
 
+            case 'M':
+                return {
+                    consumed,
+                    delete_lines_instruction{get_number(0, 1)}};
+
             case '@':
                 return {
                     consumed,
