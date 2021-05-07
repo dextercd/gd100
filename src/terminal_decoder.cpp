@@ -54,7 +54,11 @@ struct decoder {
         if (!characters_left())
             return not_enough_data();
 
-        auto const first = consume();
+        auto const first = static_cast<unsigned char>(consume());
+
+        if (first & 0b1000'0000) {
+            return decode_utf8(first);
+        }
 
         switch(first) {
             case '\f':
@@ -77,6 +81,45 @@ struct decoder {
 
         return {1, write_char_instruction{static_cast<code_point>(first)}};
         // return none_instruction{};
+    }
+
+    decode_result decode_utf8(unsigned char const first)
+    {
+        auto codepoint = std::uint32_t{0};
+        auto bytes_left = int{};
+        auto bits_received = int{};
+
+        if ((first & 0b1110'0000) == 0b1100'0000) {
+            bytes_left = 1;
+            bits_received = 5;
+        } else if ((first & 0b1111'0000) == 0b1110'0000) {
+            bytes_left = 2;
+            bits_received = 4;
+        } else if ((first & 0b1111'1000) == 0b1111'0000) {
+            bytes_left = 3;
+            bits_received = 3;
+        } else {
+            return discard_consumed();
+        }
+
+        codepoint = (std::uint32_t{first} & 0xff >> (8 - bits_received)) << bytes_left * 6;
+
+        while(true) {
+            if (!characters_left())
+                return not_enough_data();
+
+            bytes_left -= 1;
+
+            auto utf8_part = static_cast<std::uint32_t>(
+                                static_cast<unsigned char>(consume()));
+
+            codepoint |= (static_cast<std::uint32_t>(utf8_part) & 0b0011'1111 << bytes_left * 6);
+
+            if (bytes_left == 0)
+                break;
+        }
+
+        return {consumed, write_char_instruction{codepoint}};
     }
 
     decode_result decode_escape()
