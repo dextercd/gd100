@@ -295,7 +295,7 @@ terminal_program* start_program(godot_object* const instance)
 
     close(slavefd);
 
-    auto const size = gd100::extend{115, 33};
+    auto const size = gd100::extend{102, 27};
 
 
     auto const winsz = winsize{
