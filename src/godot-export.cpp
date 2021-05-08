@@ -221,9 +221,11 @@ public:
         api->godot_variant_destroy(&data);
 
         std::cerr << "Received " << count << " bytes.\n";
-        for(char* b = bytes; b != bytes + count; ++b)
-            std::cerr << ((int)*b) << ' ';
-        std::cerr << "----\n";
+        for(char* b = bytes; b != bytes + count; ++b) {
+            std::cerr << ((int)*b) << " ";
+        }
+
+        std::cerr << "\n\n\n";
     }
 
     void send_code(std::uint64_t code)
@@ -231,7 +233,6 @@ public:
         std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
         std::string u8str = converter.to_bytes(code);
         write(master_descriptor, u8str.c_str(), u8str.size());
-        std::cerr << code << '\n';
     }
 };
 
@@ -265,6 +266,9 @@ terminal_program* start_program(godot_object* const instance)
     unlockpt(masterfd);
     auto slavename = ptsname(masterfd);
     auto slavefd = open(slavename, O_RDWR | O_NOCTTY);
+    if (slavefd < 0) {
+        throw std::runtime_error{"Opening pseudoterminal slave failed."};
+    }
     auto fork_result = fork();
 
     // child
