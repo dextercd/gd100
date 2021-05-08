@@ -127,23 +127,43 @@ struct decoder {
         if (!characters_left())
             return not_enough_data();
 
-        switch(consume()) {
-            case 'N' : // single shift two
-            case 'O' : // single shift three
-            case 'P' : // device control string
+        auto const code = consume();
+        switch(code) {
             case '\\': // string terminator
+            default:
+                return {2, none_instruction()};
+
+            case 'P' : // device control string
             case ']' : // operating system command
             case 'X' : // start of string
             case '^' : // privacy message
             case '_' : // application program command
-            default:
-                return {2, none_instruction()};
+                return discard_string();
 
             case 'M':
                 return {2, reverse_line_feed_instruction{}};
 
             case '[':
                 return decode_csi();
+        }
+    }
+
+    decode_result discard_string()
+    {
+        while(true) {
+            if (!characters_left())
+                return not_enough_data();
+
+            switch (consume()) {
+                case '\a':
+                    return discard_consumed();
+
+                case esc:
+                    if (peek() == '\\') {
+                        consume();
+                        return discard_consumed();
+                    }
+            }
         }
     }
 
