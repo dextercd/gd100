@@ -99,7 +99,7 @@ void program_terminal_manager::controller_loop()
                 if (!program)
                     continue;
 
-                char read_buffer[1024];
+                char read_buffer[1024 * 10];
                 auto read_count = read(event.data.fd, read_buffer, sizeof(read_buffer));
 
                 program->handle_bytes(read_buffer, read_count);
