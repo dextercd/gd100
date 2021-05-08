@@ -313,6 +313,10 @@ void terminal::process_instruction(terminal_instruction inst)
             }
             break;
 
+        case instruction_type::move_to_row:
+            move_cursor({cursor.pos.x, inst.move_to_row.row});
+            break;
+
         case instruction_type::change_mode_bits:
             if (inst.change_mode_bits.set) {
                 mode.set(inst.change_mode_bits.mode);

@@ -405,6 +405,11 @@ struct decoder {
                 return {
                     consumed,
                     insert_newline_instruction{get_number(0, 1)}};
+
+            case 'd':
+                return {
+                    consumed,
+                    move_to_row_instruction{get_number(0, 1) - 1}};
         }
     }
 
