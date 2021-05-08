@@ -114,12 +114,11 @@ struct decoder {
             if (!characters_left())
                 return not_enough_data();
 
+            auto const utf8_part = static_cast<std::uint32_t>(
+                                    static_cast<unsigned char>(consume()));
+
             bytes_left -= 1;
-
-            auto utf8_part = static_cast<std::uint32_t>(
-                                static_cast<unsigned char>(consume()));
-
-            codepoint |= (static_cast<std::uint32_t>(utf8_part) & 0b0011'1111 << bytes_left * 6);
+            codepoint |= (utf8_part & 0b0011'1111) << bytes_left * 6;
 
             if (bytes_left == 0)
                 break;
