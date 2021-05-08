@@ -25,6 +25,11 @@ class terminal_mode : public bit_container<terminal_mode_bit> {
     using bit_container::bit_container;
 };
 
+enum class charset {
+    usa,
+    graphic0,
+};
+
 } // gd100::
 
 #endif // header guard

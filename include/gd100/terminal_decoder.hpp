@@ -35,6 +35,9 @@ enum class instruction_type {
 
     insert_blanks,
     insert_newline,
+
+    set_charset_table,
+    use_charset_table,
 };
 
 enum class direction {
@@ -145,6 +148,19 @@ struct insert_newline_instruction {
 template<> constexpr inline
 auto instruction_number<insert_newline_instruction> = instruction_type::insert_newline;
 
+struct set_charset_table_instruction {
+    int table_index;
+    charset cs;
+};
+template<> constexpr inline
+auto instruction_number<set_charset_table_instruction> = instruction_type::set_charset_table;
+
+struct use_charset_table_instruction {
+    int table_index;
+};
+template<> constexpr inline
+auto instruction_number<use_charset_table_instruction> = instruction_type::use_charset_table;
+
 struct terminal_instruction {
     instruction_type type;
 
@@ -165,6 +181,8 @@ struct terminal_instruction {
         delete_lines_instruction delete_lines;
         insert_blanks_instruction insert_blanks;
         insert_newline_instruction insert_newline;
+        set_charset_table_instruction set_charset_table;
+        use_charset_table_instruction use_charset_table;
     };
 
 private:
@@ -226,6 +244,16 @@ private:
     void set_data(insert_newline_instruction i)
     {
         insert_newline = i;
+    }
+
+    void set_data(set_charset_table_instruction i)
+    {
+        set_charset_table = i;
+    }
+
+    void set_data(use_charset_table_instruction i)
+    {
+        use_charset_table = i;
     }
 };
 

@@ -75,6 +75,12 @@ struct decoder {
             case '\a':
                 return {1, none_instruction{}};
 
+            case '\016': /* SO (LS1 -- Locking shift 1) */
+            case '\017': /* SI (LS0 -- Locking shift 0) */
+                return {
+                    consumed,
+                    use_charset_table_instruction{first - '\016'}};
+
             case esc:
                 return decode_escape();
         }
@@ -129,9 +135,21 @@ struct decoder {
 
         auto const code = consume();
         switch(code) {
+            case 'n': /* LS2 -- Locking shift 2 */
+            case 'o': /* LS3 -- Locking shift 3 */
+                return {
+                    consumed,
+                    use_charset_table_instruction{code - 'n' + 2}};
+
             case '\\': // string terminator
             default:
                 return {2, none_instruction()};
+
+            case '(':
+            case ')':
+            case '*':
+            case '+':
+                return decode_set_charset_table(code - '(');
 
             case 'P' : // device control string
             case ']' : // operating system command
@@ -145,6 +163,27 @@ struct decoder {
 
             case '[':
                 return decode_csi();
+        }
+    }
+
+    decode_result decode_set_charset_table(int table_index)
+    {
+        if (!characters_left())
+            return not_enough_data();
+
+        switch(consume()) {
+            case '0':
+                return {
+                    consumed,
+                    set_charset_table_instruction{table_index, charset::graphic0}};
+
+            case 'B':
+                return {
+                    consumed,
+                    set_charset_table_instruction{table_index, charset::usa}};
+
+            default:
+                return discard_consumed();
         }
     }
 

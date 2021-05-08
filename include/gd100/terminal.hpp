@@ -17,12 +17,20 @@ public:
     terminal_screen screen{};
     terminal_mode mode{};
 
+private:
+    charset translation_tables[4] = {
+        charset::usa, charset::usa,
+        charset::usa, charset::usa};
+    int using_translation_table = 0;
+
 public:
     terminal() = default;
     terminal(extend screen_size)
         : screen{screen_size}
     {
     }
+
+    charset current_charset() const;
 
     void newline(bool first_column);
     void write_char(code_point ch);

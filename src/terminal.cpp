@@ -11,6 +11,11 @@ int code_point_width(code_point)
     return 1;
 }
 
+charset terminal::current_charset() const
+{
+    return translation_tables[using_translation_table];
+}
+
 void terminal::newline(bool first_column)
 {
     if (cursor.pos.y + 1 < screen.size().height) {
@@ -77,6 +82,24 @@ void terminal::move_cursor_forward(int width)
 
 void terminal::set_char(code_point ch, glyph_style style, position pos)
 {
+    // The table is proudly stolen from st from rxvt.
+    static char32_t vt100_0[] = {
+        U'↑', U'↓', U'→', U'←', U'█', U'▚', U'☃',
+        0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
+        0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
+        0   , 0   , 0   , 0   , 0   , 0   , 0   , U' ',
+        U'◆', U'▒', U'␉', U'␌', U'␍', U'␊', U'°', U'±',
+        U'␤', U'␋', U'┘', U'┐', U'┌', U'└', U'┼', U'⎺',
+        U'⎻', U'─', U'⎼', U'⎽', U'├', U'┤', U'┴', U'┬',
+        U'│', U'≤', U'≥', U'π', U'≠', U'£', U'·',
+    };
+
+    if (current_charset() == charset::graphic0 &&
+        ch >= 0x41 && ch <= 0x7e && vt100_0[ch] != 0)
+    {
+        ch = vt100_0[ch - 0x41];
+    }
+
     mark_dirty(pos.y);
     screen.get_glyph(pos) = {style, ch};
     // TODO: implement wide character overwriting properly.
@@ -348,6 +371,13 @@ void terminal::process_instruction(terminal_instruction inst)
         case instruction_type::insert_newline:
             insert_newline(inst.insert_newline.count);
             break;
+
+        case instruction_type::set_charset_table:
+            translation_tables[inst.set_charset_table.table_index] =
+                    inst.set_charset_table.cs;
+
+        case instruction_type::use_charset_table:
+            using_translation_table = inst.use_charset_table.table_index;
     }
 }
 
