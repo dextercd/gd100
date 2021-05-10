@@ -214,7 +214,7 @@ struct decoder {
 
     decode_result decode_csi()
     {
-        csi_param params[10];
+        csi_param params[max_csi_params]{};
         int param_count = 0;
 
         while(true) {
