@@ -331,7 +331,7 @@ void terminal::process_instruction(terminal_instruction inst)
                     move_cursor({cursor.pos.x + inst.move_cursor.count, cursor.pos.y});
                     break;
                 case direction::back:
-                    move_cursor({cursor.pos.x + inst.move_cursor.count, cursor.pos.y});
+                    move_cursor({cursor.pos.x - inst.move_cursor.count, cursor.pos.y});
                     break;
             }
             break;
