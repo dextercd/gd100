@@ -386,6 +386,7 @@ struct decoder {
                 }
             } break;
 
+            case 'f':
             case 'H':
                 return {
                     consumed,
