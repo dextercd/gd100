@@ -359,7 +359,10 @@ struct decoder {
     {
         auto get_number = [&](int index=0, int default_=0, int offset=0) -> int {
             auto param_index = index * 2 + offset;
-            if (param_index < param_count && params[param_index].type == csi_param_type::number) {
+            if (param_index < param_count &&
+                params[param_index].type == csi_param_type::number &&
+                params[param_index].type_data.number != 0)
+            {
                 return params[param_index].type_data.number;
             }
 
