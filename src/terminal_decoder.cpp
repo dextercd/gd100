@@ -309,7 +309,7 @@ struct decoder {
         if (!is_csi_final(final)) {
             // Finaly byte in csi sequence is invalid.
             // We discard everything we've consumed so far.
-            return {consumed, none_instruction{}};
+            return discard_consumed();
         }
         consume();
 
