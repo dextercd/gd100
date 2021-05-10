@@ -26,5 +26,6 @@ TEST_CASE("utf-8", "[utf-8]") {
         REQUIRE(decode_utf8("€") == U'€');
         REQUIRE(decode_utf8("한") == U'한');
         REQUIRE(decode_utf8("𐍈") == U'𐍈');
+        REQUIRE(decode_utf8("⚡") == U'⚡');
     }
 }
