@@ -3,13 +3,9 @@
 
 #include <gd100/terminal.hpp>
 #include <gd100/terminal_decoder.hpp>
+#include <cw/character_width.hpp>
 
 namespace gd100 {
-
-int code_point_width(code_point)
-{
-    return 1;
-}
 
 charset terminal::current_charset() const
 {
@@ -30,7 +26,7 @@ void terminal::newline(bool first_column)
 
 void terminal::write_char(code_point ch)
 {
-    auto width{code_point_width(ch)};
+    auto width{cw::character_width(ch)};
 
     auto* gl{glyph_at_cursor()};
     if (cursor.state.is_set(cursor_state_bit::wrap_next)) {

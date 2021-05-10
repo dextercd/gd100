@@ -1,9 +1,11 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.19)
 
 project(godot-terminal
     LANGUAGES CXX)
 
 enable_testing()
+
+add_subdirectory(character_width)
 
 add_library(terminal STATIC
     src/terminal.cpp
@@ -21,6 +23,9 @@ set_target_properties(terminal PROPERTIES
 
 target_compile_features(terminal
     PUBLIC cxx_std_17)
+
+target_link_libraries(terminal
+    PUBLIC character_width)
 
 
 add_library(godot-terminal MODULE
