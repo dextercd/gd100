@@ -431,47 +431,56 @@ struct decoder {
             case 'A':
                 return {
                     consumed,
-                    move_cursor_instruction{get_number(0, 1), direction::up}};
+                    move_cursor_instruction{get_number(0, 1), direction::up}
+                };
 
             case 'B':
                 return {
                     consumed,
-                    move_cursor_instruction{get_number(0, 1), direction::down}};
+                    move_cursor_instruction{get_number(0, 1), direction::down}
+                };
 
             case 'C':
                 return {
                     consumed,
-                    move_cursor_instruction{get_number(0, 1), direction::forward}};
+                    move_cursor_instruction{get_number(0, 1), direction::forward}
+                };
 
             case 'D':
                 return {
                     consumed,
-                    move_cursor_instruction{get_number(0, 1), direction::back}};
+                    move_cursor_instruction{get_number(0, 1), direction::back}
+                };
 
             case 'P':
                 return {
                     consumed,
-                    delete_chars_instruction{get_number(0, 1)}};
+                    delete_chars_instruction{get_number(0, 1)}
+                };
 
             case 'M':
                 return {
                     consumed,
-                    delete_lines_instruction{get_number(0, 1)}};
+                    delete_lines_instruction{get_number(0, 1)}
+                };
 
             case '@':
                 return {
                     consumed,
-                    insert_blanks_instruction{get_number(0, 1)}};
+                    insert_blanks_instruction{get_number(0, 1)}
+                };
 
             case 'L':
                 return {
                     consumed,
-                    insert_newline_instruction{get_number(0, 1)}};
+                    insert_newline_instruction{get_number(0, 1)}
+                };
 
             case 'd':
                 return {
                     consumed,
-                    move_to_row_instruction{get_number(0, 1) - 1}};
+                    move_to_row_instruction{get_number(0, 1) - 1}
+                };
         }
     }
 
