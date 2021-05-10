@@ -204,6 +204,11 @@ public:
     {
     }
 
+    ~terminal_program()
+    {
+        close(master_descriptor);
+    }
+
     void handle_bytes(char* bytes, std::size_t count) override
     {
         write_buffer.append(bytes, count);
