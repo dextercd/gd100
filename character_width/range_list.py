@@ -53,7 +53,8 @@ class RangeList:
 
     def __iter__(self):
         yield from self._completed_ranges
-        yield self._in_progress_range
+        if self._in_progress_range is not None:
+            yield self._in_progress_range
 
 
 def transform_list(range_list, property_mapping):
