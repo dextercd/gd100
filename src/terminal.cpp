@@ -27,6 +27,8 @@ void terminal::newline(bool first_column)
 void terminal::write_char(code_point ch)
 {
     auto width{cw::character_width(ch)};
+    if (width == -1)
+        return;
 
     auto* gl{glyph_at_cursor()};
     if (cursor.state.is_set(cursor_state_bit::wrap_next)) {
