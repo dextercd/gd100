@@ -6,9 +6,7 @@ import range_list
 
 
 def cat_is_zero(cat):
-    if cat == 'Mc': return True
-    if cat == 'Me': return True
-    return False
+    return cat in ['Mc', 'Me']
 
 
 parser = argparse.ArgumentParser(description='Generate zero width table')
