@@ -7,13 +7,13 @@ endif()
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/double_width_table.inc
     COMMAND
-        python3 ${CMAKE_CURRENT_SOURCE_DIR}/generate_width_table.py
+        python3 ${CMAKE_CURRENT_SOURCE_DIR}/generate_double_width_table.py
                 --input ${CMAKE_CURRENT_BINARY_DIR}/EastAsianWidth.txt
                 --output ${CMAKE_CURRENT_BINARY_DIR}/double_width_table.inc
 
     DEPENDS
         ${CMAKE_CURRENT_BINARY_DIR}/EastAsianWidth.txt
-        generate_width_table.py
+        generate_double_width_table.py
         parse_eaw.py
         range_list.py
 )
