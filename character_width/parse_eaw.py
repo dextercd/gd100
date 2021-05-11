@@ -2,6 +2,18 @@ import range_list
 import parse_util
 
 
+# Code for parsing EastAsianWidth.txt
+
+# Format:
+# <codepoint>;<width-category>
+# <codepoint>..<codepoint>;<width-category>
+#
+# 0000..001F;N
+# 0020;Na
+
+# The codepoints listed in the file are in ascending order
+
+
 def parse(file_name):
     ranges = range_list.RangeList()
 

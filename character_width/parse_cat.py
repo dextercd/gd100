@@ -2,6 +2,18 @@ import range_list
 import parse_util
 
 
+# Code for parsing DerivedGeneralCategory.txt
+
+# Format:
+# <codepoint>;<general-category>
+# <codepoint>..<codepoint>;<general-category>
+#
+# 0380..0383    ; Cn
+# 038B          ; Cn
+
+# The codepoints are partitioned by category, NOT in ascending order
+
+
 def parse(file_name):
     unordered_ranges = []
 
