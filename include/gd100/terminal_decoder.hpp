@@ -29,6 +29,7 @@ enum class instruction_type {
     change_mode_bits,
 
     delete_chars,
+    erase_chars,
     delete_lines,
 
     reverse_line_feed,
@@ -126,6 +127,12 @@ struct delete_chars_instruction {
 template<> constexpr inline
 auto instruction_number<delete_chars_instruction> = instruction_type::delete_chars;
 
+struct erase_chars_instruction {
+    int count;
+};
+template<> constexpr inline
+auto instruction_number<erase_chars_instruction> = instruction_type::erase_chars;
+
 struct delete_lines_instruction {
     int count;
 };
@@ -178,6 +185,7 @@ struct terminal_instruction {
         move_cursor_instruction move_cursor;
         move_to_row_instruction move_to_row;
         delete_chars_instruction delete_chars;
+        erase_chars_instruction erase_chars;
         delete_lines_instruction delete_lines;
         insert_blanks_instruction insert_blanks;
         insert_newline_instruction insert_newline;
@@ -227,6 +235,11 @@ private:
     void set_data(delete_chars_instruction i)
     {
         delete_chars = i;
+    }
+
+    void set_data(erase_chars_instruction i)
+    {
+        erase_chars = i;
     }
 
     void set_data(delete_lines_instruction i)

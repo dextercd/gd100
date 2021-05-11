@@ -458,6 +458,12 @@ struct decoder {
                     delete_chars_instruction{get_number(0, 1)}
                 };
 
+            case 'X':
+                return {
+                    consumed,
+                    erase_chars_instruction{get_number(0, 1)}
+                };
+
             case 'M':
                 return {
                     consumed,

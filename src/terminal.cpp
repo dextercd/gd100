@@ -350,6 +350,10 @@ void terminal::process_instruction(terminal_instruction inst)
             delete_chars(inst.delete_chars.count);
             break;
 
+        case instruction_type::erase_chars:
+            clear(cursor.pos, {cursor.pos.x + inst.erase_chars.count - 1, cursor.pos.y});
+            break;
+
         case instruction_type::delete_lines:
             scroll_up(cursor.pos.y, inst.delete_lines.count);
             break;
