@@ -59,7 +59,7 @@ int character_width(char32_t code)
         return 0;
 
     // c0 c1 control codes
-    if (code >= 0x00 && code <= 0x1f || code >= 0x80 && code <= 0x9f)
+    if ((code >= 0x00 && code <= 0x1f) || (code >= 0x80 && code <= 0x9f))
         return -1;
 
     auto const zero_width_it = std::lower_bound(
