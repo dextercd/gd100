@@ -313,6 +313,14 @@ void terminal::process_instruction(terminal_instruction inst)
             clear({0, cursor.pos.y}, {screen.size().width - 1, cursor.pos.y});
             break;
 
+        case instruction_type::move_to_column:
+            move_cursor({inst.move_to_column.column, cursor.pos.y});
+            break;
+
+        case instruction_type::move_to_row:
+            move_cursor({cursor.pos.x, inst.move_to_row.row});
+            break;
+
         case instruction_type::position_cursor:
             move_cursor(inst.position_cursor.pos);
             break;
@@ -332,10 +340,6 @@ void terminal::process_instruction(terminal_instruction inst)
                     move_cursor({cursor.pos.x - inst.move_cursor.count, cursor.pos.y});
                     break;
             }
-            break;
-
-        case instruction_type::move_to_row:
-            move_cursor({cursor.pos.x, inst.move_to_row.row});
             break;
 
         case instruction_type::change_mode_bits:

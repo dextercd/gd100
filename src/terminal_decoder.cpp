@@ -386,6 +386,19 @@ struct decoder {
                 }
             } break;
 
+            case 'G':
+            case '`':
+                return {
+                    consumed,
+                    move_to_column_instruction{get_number(0, 1) - 1}
+                };
+
+            case 'd':
+                return {
+                    consumed,
+                    move_to_row_instruction{get_number(0, 1) - 1}
+                };
+
             case 'f':
             case 'H':
                 return {
@@ -480,12 +493,6 @@ struct decoder {
                 return {
                     consumed,
                     insert_newline_instruction{get_number(0, 1)}
-                };
-
-            case 'd':
-                return {
-                    consumed,
-                    move_to_row_instruction{get_number(0, 1) - 1}
                 };
         }
     }

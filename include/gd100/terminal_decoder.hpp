@@ -22,9 +22,10 @@ enum class instruction_type {
     clear_from_begin,
     clear_line,
 
+    move_to_column,
+    move_to_row,
     position_cursor,
     move_cursor,
-    move_to_row,
 
     change_mode_bits,
 
@@ -108,6 +109,12 @@ struct move_cursor_instruction {
 template<> constexpr inline
 auto instruction_number<move_cursor_instruction> = instruction_type::move_cursor;
 
+struct move_to_column_instruction {
+    int column;
+};
+template<> constexpr inline
+auto instruction_number<move_to_column_instruction> = instruction_type::move_to_column;
+
 struct move_to_row_instruction {
     int row;
 };
@@ -183,6 +190,7 @@ struct terminal_instruction {
         position_cursor_instruction position_cursor;
         change_mode_bits_instruction change_mode_bits;
         move_cursor_instruction move_cursor;
+        move_to_column_instruction move_to_column;
         move_to_row_instruction move_to_row;
         delete_chars_instruction delete_chars;
         erase_chars_instruction erase_chars;
@@ -225,6 +233,11 @@ private:
     void set_data(move_cursor_instruction i)
     {
         move_cursor = i;
+    }
+
+    void set_data(move_to_column_instruction i)
+    {
+        move_to_column = i;
     }
 
     void set_data(move_to_row_instruction i)
