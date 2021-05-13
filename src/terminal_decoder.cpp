@@ -6,6 +6,8 @@
 
 namespace gd100 {
 
+namespace {
+
 constexpr char esc = '\x1b';
 
 enum class csi_param_type {
@@ -13,527 +15,476 @@ enum class csi_param_type {
     character
 };
 
-struct csi_param {
-    csi_param_type type;
-    union {
-        int number;
-        char character;
-    } type_data;
+constexpr int max_csi_params = 10;
 
-    csi_param()
-        : csi_param(0)
-    {
+constexpr bool is_csi_final(char const c)
+{
+    return c >= 0x40 && c <= 0x7e;
+}
+
+using decode_session_ret = std::size_t;
+#define RETURN_SUCCESS return index;
+#define RETURN_NOT_ENOUGH_DATA return 0;
+
+// You can think of the COMMON_PARAMS as being the member variables.
+// Except that they are copied between function calls.
+// This encourages the compiler to keep this stuff in registers and allows it to
+// optimize more.
+#define COMMON_PARAMS                  \
+    const char* const buffer_one,      \
+    std::size_t const buffer_one_size, \
+    const char* const buffer_two,      \
+    std::size_t const buffer_two_size, \
+    std::size_t index,                 \
+    decoder_instructee& t
+
+#define COMMON_PARAMS_INDEX_REF        \
+    const char* const buffer_one,      \
+    std::size_t const buffer_one_size, \
+    const char* const buffer_two,      \
+    std::size_t const buffer_two_size, \
+    std::size_t& index,                \
+    decoder_instructee& t
+
+#define ARGS         \
+    buffer_one,      \
+    buffer_one_size, \
+    buffer_two,      \
+    buffer_two_size, \
+    index,           \
+    t
+
+decode_session_ret decode_utf8(COMMON_PARAMS, unsigned char const first);
+decode_session_ret decode_escape(COMMON_PARAMS);
+decode_session_ret decode_set_charset_table(COMMON_PARAMS, int const table_index);
+decode_session_ret discard_string(COMMON_PARAMS);
+
+decode_session_ret decode_csi(COMMON_PARAMS);
+
+decode_session_ret decode_csi_priv(
+        COMMON_PARAMS,
+        int const* const params,
+        int const param_count,
+        char const final);
+
+decode_session_ret decode_csi_pub(
+        COMMON_PARAMS,
+        int const* const params,
+        int const param_count,
+        char const final);
+
+std::size_t characters_left(COMMON_PARAMS)
+{
+    return buffer_one_size + buffer_two_size - index;
+}
+
+char peek(COMMON_PARAMS, std::size_t forward = 0)
+{
+    auto ix = index + forward;
+
+    if (ix < buffer_one_size)
+        return buffer_one[ix];
+
+    ix -= buffer_one_size;
+
+    if (ix < buffer_two_size)
+        return buffer_two[ix];
+
+    return '\0';
+}
+
+char consume(COMMON_PARAMS_INDEX_REF)
+{
+    auto ret = peek(ARGS);
+    if (characters_left(ARGS) > 0)
+        index++;
+
+    return ret;
+}
+
+decode_session_ret decode_one(COMMON_PARAMS)
+{
+    if (!characters_left(ARGS))
+        RETURN_NOT_ENOUGH_DATA;
+
+    auto const first = static_cast<unsigned char>(consume(ARGS));
+
+    if (first > 0x7f) {
+        return decode_utf8(ARGS, first);
     }
 
-    csi_param(int value)
-        : type{csi_param_type::number}
-    {
-        type_data.number = value;
+    switch(first) {
+        case '\f':
+        case '\v':
+        case '\n':
+            t.line_feed();
+            RETURN_SUCCESS;
+
+        case '\r':
+            t.carriage_return();
+            RETURN_SUCCESS;
+
+        case '\b':
+            t.backspace();
+            RETURN_SUCCESS;
+
+        case '\a':
+            RETURN_SUCCESS;
+
+        case '\016': /* SO (LS1 -- Locking shift 1) */
+        case '\017': /* SI (LS0 -- Locking shift 0) */
+            t.use_charset_table(first - '\016');
+            RETURN_SUCCESS;
+
+        case esc:
+            return decode_escape(ARGS);
     }
 
-    csi_param(char value)
-        : type{csi_param_type::character}
-    {
-        type_data.character = value;
+    t.write_char(static_cast<code_point>(first));
+    RETURN_SUCCESS;
+}
+
+decode_session_ret decode_utf8(COMMON_PARAMS, unsigned char const first)
+{
+    auto codepoint = std::uint32_t{0};
+    auto bytes_left = int{};
+    auto bits_received = int{};
+
+    if ((first & 0b1110'0000) == 0b1100'0000) {
+        bytes_left = 1;
+        bits_received = 5;
+    } else if ((first & 0b1111'0000) == 0b1110'0000) {
+        bytes_left = 2;
+        bits_received = 4;
+    } else if ((first & 0b1111'1000) == 0b1111'0000) {
+        bytes_left = 3;
+        bits_received = 3;
+    } else {
+        RETURN_NOT_ENOUGH_DATA;
     }
-};
 
-struct decoder {
-    const char* bytes;
-    int count;
-    int consumed = 0;
+    codepoint = (std::uint32_t{first} & 0xff >> (8 - bits_received)) << bytes_left * 6;
 
-    decoder(char const* b, int c)
-        : bytes{b}
-        , count{c}
-    {
+    while(true) {
+        if (!characters_left(ARGS))
+            RETURN_NOT_ENOUGH_DATA;
+
+        auto const utf8_part = static_cast<std::uint32_t>(
+                                static_cast<unsigned char>(consume(ARGS)));
+
+        bytes_left -= 1;
+        codepoint |= (utf8_part & 0b0011'1111) << bytes_left * 6;
+
+        if (bytes_left == 0)
+            break;
     }
 
-    decode_result decode()
-    {
-        if (!characters_left())
-            return not_enough_data();
+    t.write_char(codepoint);
+    RETURN_SUCCESS;
+}
 
-        auto const first = static_cast<unsigned char>(consume());
 
-        if (first & 0b1000'0000) {
-            return decode_utf8(first);
-        }
+decode_session_ret decode_escape(COMMON_PARAMS)
+{
+    if (!characters_left(ARGS))
+        RETURN_NOT_ENOUGH_DATA;
 
-        switch(first) {
-            case '\f':
-            case '\v':
-            case '\n':
-                return {1, line_feed_instruction{}};
+    auto const code = consume(ARGS);
+    switch(code) {
+        case 'n': /* LS2 -- Locking shift 2 */
+        case 'o': /* LS3 -- Locking shift 3 */
+            t.use_charset_table(code - 'n' + 2);
+            RETURN_SUCCESS;
 
-            case '\r':
-                return {1, carriage_return_instruction{}};
+        case '\\': // string terminator
+        default:
+            RETURN_SUCCESS;
 
-            case '\b':
-                return {1, backspace_instruction{}};
+        case '(':
+        case ')':
+        case '*':
+        case '+':
+            return decode_set_charset_table(ARGS, code - '(');
 
+        case 'P' : // device control string
+        case ']' : // operating system command
+        case 'X' : // start of string
+        case '^' : // privacy message
+        case '_' : // application program command
+            return discard_string(ARGS);
+
+        case 'M':
+            t.reverse_line_feed();
+            RETURN_SUCCESS;
+
+        case '[':
+            return decode_csi(ARGS);
+    }
+}
+
+decode_session_ret decode_set_charset_table(COMMON_PARAMS, int const table_index)
+{
+    if (!characters_left(ARGS))
+        RETURN_NOT_ENOUGH_DATA;
+
+    switch(consume(ARGS)) {
+        case '0':
+            t.set_charset_table(table_index, charset::graphic0);
+            RETURN_SUCCESS;
+
+        case 'B':
+            t.set_charset_table(table_index, charset::usa);
+            RETURN_SUCCESS;
+
+        default:
+            RETURN_SUCCESS; // discard unknown
+    }
+}
+
+decode_session_ret discard_string(COMMON_PARAMS)
+{
+    while(true) {
+        if (!characters_left(ARGS))
+            RETURN_NOT_ENOUGH_DATA;
+
+        switch (consume(ARGS)) {
             case '\a':
-                return {1, none_instruction{}};
-
-            case '\016': /* SO (LS1 -- Locking shift 1) */
-            case '\017': /* SI (LS0 -- Locking shift 0) */
-                return {
-                    consumed,
-                    use_charset_table_instruction{first - '\016'}};
+                RETURN_SUCCESS;
 
             case esc:
-                return decode_escape();
-        }
-
-        return {1, write_char_instruction{static_cast<code_point>(first)}};
-        // return none_instruction{};
-    }
-
-    decode_result decode_utf8(unsigned char const first)
-    {
-        auto codepoint = std::uint32_t{0};
-        auto bytes_left = int{};
-        auto bits_received = int{};
-
-        if ((first & 0b1110'0000) == 0b1100'0000) {
-            bytes_left = 1;
-            bits_received = 5;
-        } else if ((first & 0b1111'0000) == 0b1110'0000) {
-            bytes_left = 2;
-            bits_received = 4;
-        } else if ((first & 0b1111'1000) == 0b1111'0000) {
-            bytes_left = 3;
-            bits_received = 3;
-        } else {
-            return discard_consumed();
-        }
-
-        codepoint = (std::uint32_t{first} & 0xff >> (8 - bits_received)) << bytes_left * 6;
-
-        while(true) {
-            if (!characters_left())
-                return not_enough_data();
-
-            auto const utf8_part = static_cast<std::uint32_t>(
-                                    static_cast<unsigned char>(consume()));
-
-            bytes_left -= 1;
-            codepoint |= (utf8_part & 0b0011'1111) << bytes_left * 6;
-
-            if (bytes_left == 0)
-                break;
-        }
-
-        return {consumed, write_char_instruction{codepoint}};
-    }
-
-    decode_result decode_escape()
-    {
-        if (!characters_left())
-            return not_enough_data();
-
-        auto const code = consume();
-        switch(code) {
-            case 'n': /* LS2 -- Locking shift 2 */
-            case 'o': /* LS3 -- Locking shift 3 */
-                return {
-                    consumed,
-                    use_charset_table_instruction{code - 'n' + 2}};
-
-            case '\\': // string terminator
-            default:
-                return {2, none_instruction()};
-
-            case '(':
-            case ')':
-            case '*':
-            case '+':
-                return decode_set_charset_table(code - '(');
-
-            case 'P' : // device control string
-            case ']' : // operating system command
-            case 'X' : // start of string
-            case '^' : // privacy message
-            case '_' : // application program command
-                return discard_string();
-
-            case 'M':
-                return {2, reverse_line_feed_instruction{}};
-
-            case '[':
-                return decode_csi();
-        }
-    }
-
-    decode_result decode_set_charset_table(int table_index)
-    {
-        if (!characters_left())
-            return not_enough_data();
-
-        switch(consume()) {
-            case '0':
-                return {
-                    consumed,
-                    set_charset_table_instruction{table_index, charset::graphic0}};
-
-            case 'B':
-                return {
-                    consumed,
-                    set_charset_table_instruction{table_index, charset::usa}};
-
-            default:
-                return discard_consumed();
-        }
-    }
-
-    decode_result discard_string()
-    {
-        while(true) {
-            if (!characters_left())
-                return not_enough_data();
-
-            switch (consume()) {
-                case '\a':
-                    return discard_consumed();
-
-                case esc:
-                    if (peek() == '\\') {
-                        consume();
-                        return discard_consumed();
-                    }
-            }
-        }
-    }
-
-    static constexpr int max_csi_params = 10;
-
-    constexpr bool is_csi_argument_character(char const c)
-    {
-        return c >= 0x30 && c <= 0x3f;
-    }
-
-    decode_result decode_csi()
-    {
-        csi_param params[max_csi_params]{};
-        int param_count = 0;
-
-        while(true) {
-            if (!characters_left())
-                return not_enough_data();
-
-            auto const peeked = peek();
-
-            // Not a parameter, so hand off to next stage
-            if (!is_csi_argument_character(peeked))
-                return decode_csi_intermediate(params, param_count);
-
-            // Can't store this parameter, so discard it
-            if (param_count >= max_csi_params) {
-                consume();
-                continue; // Process next data
-            }
-
-            if (peeked >= '0' && peeked <= '9') {
-                int value;
-                auto const [consumed_to, err] = std::from_chars(bytes + consumed, bytes + count, value);
-                if (err == std::errc::result_out_of_range) {
-                    value = -1;
+                if (peek(ARGS) == '\\') {
+                    consume(ARGS);
+                    RETURN_SUCCESS;
                 }
-
-                params[param_count++] = value;
-                consumed = consumed_to - bytes;
-            } else {
-                params[param_count++] = consume();
-            }
         }
     }
+}
 
-    static constexpr int max_csi_intermediate = 10;
+decode_session_ret decode_csi(COMMON_PARAMS)
+{
+    int params[max_csi_params]{};
+    int param_count = 0;
 
-    constexpr bool is_csi_intermediate(char const c)
-    {
-        return c >= 0x20 && c <= 0x2f;
-    }
+    auto const is_private = peek(ARGS) == '?';
+    if (is_private)
+        consume(ARGS);
 
-    decode_result decode_csi_intermediate(csi_param const* const params, int const param_count)
-    {
-        char intermediate_bytes[max_csi_intermediate];
-        int intermediate_count = 0;
+    while(true) {
+        if (!characters_left(ARGS))
+            RETURN_NOT_ENOUGH_DATA;
 
-        while(true) {
-            if (!characters_left())
-                return not_enough_data();
-
-            auto const peeked = peek();
-
-            // Not an csi intermediate byte, so hand off to next stage
-            if (!is_csi_intermediate(peeked))
-                return decode_csi_finish(params, param_count, intermediate_bytes, intermediate_count);
-
-            if (intermediate_count >= max_csi_intermediate) {
-                consume();
-                continue;
+        auto const first = consume(ARGS);
+        if (is_csi_final(first)) {
+            if (is_private) {
+                return decode_csi_priv(
+                        ARGS,
+                        params, param_count,
+                        first);
             }
 
-            intermediate_bytes[intermediate_count++] = consume();
-        }
-    }
-
-    constexpr bool is_csi_final(char const c)
-    {
-        return c >= 0x40 && c <= 0x7e;
-    }
-
-    constexpr bool is_csi_final_priv(char const c)
-    {
-        return c >= 0x70 && c <= 0x7e;
-    }
-
-    static bool is_csi_param_priv(csi_param const param)
-    {
-        return param.type == csi_param_type::character
-            && param.type_data.character >= 0x3c
-            && param.type_data.character <= 0x3f;
-    }
-
-    decode_result decode_csi_finish(
-            csi_param const* const params,
-            int const param_count,
-            char const* const intermediate_bytes,
-            int const intermediate_count)
-    {
-        if (!characters_left())
-            return not_enough_data();
-
-        auto const final = peek();
-        if (!is_csi_final(final)) {
-            // Finaly byte in csi sequence is invalid.
-            // We discard everything we've consumed so far.
-            return discard_consumed();
-        }
-        consume();
-
-        bool is_priv = is_csi_final_priv(final)
-                    || std::any_of(params, params + param_count, is_csi_param_priv);
-
-#if 1
-        std::cout << "ESC [";
-        for (int i = 0; i < param_count; ++i) {
-            std::cout << " ";
-            if (params[i].type == csi_param_type::number) {
-                std::cout << params[i].type_data.number;
-            } else if (params[i].type == csi_param_type::character) {
-                std::cout << params[i].type_data.character;
-            }
+            return decode_csi_pub(
+                    ARGS,
+                    params, param_count,
+                    first);
         }
 
-        for (int i = 0; i < intermediate_count; ++i) {
-            std::cout << ' ' << intermediate_bytes[i];
-        }
-
-        std::cout << ' ' << final << '\n';
-#endif
-
-        if (is_priv)
-            return decode_csi_priv(params, param_count, intermediate_bytes, intermediate_count, final);
-
-        return decode_csi_pub(params, param_count, intermediate_bytes, intermediate_count, final);
-    }
-
-    decode_result decode_csi_priv(
-            csi_param const* const params,
-            int const param_count,
-            char const* const intermediate_bytes,
-            int const intermediate_count,
-            char const final)
-    {
-        return discard_consumed();
-    }
-
-    decode_result decode_csi_pub(
-            csi_param const* const params,
-            int const param_count,
-            char const* const intermediate_bytes,
-            int const intermediate_count,
-            char const final)
-    {
-        auto get_number = [&](int index=0, int default_=0, int offset=0) -> int {
-            auto param_index = index * 2 + offset;
-            if (param_index < param_count &&
-                params[param_index].type == csi_param_type::number &&
-                params[param_index].type_data.number != 0)
-            {
-                return params[param_index].type_data.number;
-            }
-
-            return default_;
+        char read_buffer[] {
+            first        , peek(ARGS, 0),
+            peek(ARGS, 1), peek(ARGS, 2),
+            peek(ARGS, 3), peek(ARGS, 4),
         };
 
-        switch(final) {
-            default:
-                return discard_consumed();
+        int value;
+        auto const [num_end, ec] = std::from_chars(
+                                            std::begin(read_buffer),
+                                            std::end(read_buffer),
+                                            value);
 
-            case 'J': {
-                switch(get_number(0)) {
-                    case 0:
-                        return {consumed, clear_to_bottom_instruction{}};
-                    case 1:
-                        return {consumed, clear_from_top_instruction{}};
+        if (ec == std::errc::result_out_of_range) {
+            value = -1;
+        } else if (num_end == std::begin(read_buffer)) {
+            value = 0;
+        } else {
+            auto digits_parsed = num_end - std::begin(read_buffer);
+            index += digits_parsed - 1; // Subtract one because we already consumed first
+        }
 
-                    case 2:
-                    default:
-                        return {consumed, clear_screen_instruction{}};
-                }
-            } break;
+        // If we don't have enough space we just discard it
+        if (param_count < max_csi_params)
+            params[param_count++] = value;
 
-            case 'G':
-            case '`':
-                return {
-                    consumed,
-                    move_to_column_instruction{get_number(0, 1) - 1}
-                };
-
-            case 'd':
-                return {
-                    consumed,
-                    move_to_row_instruction{get_number(0, 1) - 1}
-                };
-
-            case 'f':
-            case 'H':
-                return {
-                    consumed,
-                    position_cursor_instruction{{
-                        std::max(0, get_number(1) - 1),
-                        std::max(0, get_number(0) - 1)
-                    }}
-                };
-
-            case 'K': {
-                switch(get_number(0)) {
-                    case 0:
-                        return {consumed, clear_to_end_instruction{}};
-
-                    case 1:
-                        return {consumed, clear_from_begin_instruction{}};
-
-                    case 2:
-                    default:
-                        return {consumed, clear_line_instruction{}};
-                }
-            } break;
-
-            case 'l':
-            case 'h': {
-                bool set = final == 'h';
-                terminal_mode mode;
-                for (int i = 0; true; ++i) {
-                    auto number = get_number(i, -1);
-                    if (number == -1)
-                        break;
-
-                    switch(number) {
-                        case 4:
-                            mode.set(terminal_mode_bit::insert);
-                    }
-                }
-
-                return {consumed, change_mode_bits_instruction{set, mode}};
-            }
-
-            case 'A':
-                return {
-                    consumed,
-                    move_cursor_instruction{get_number(0, 1), direction::up}
-                };
-
-            case 'B':
-                return {
-                    consumed,
-                    move_cursor_instruction{get_number(0, 1), direction::down}
-                };
-
-            case 'C':
-                return {
-                    consumed,
-                    move_cursor_instruction{get_number(0, 1), direction::forward}
-                };
-
-            case 'D':
-                return {
-                    consumed,
-                    move_cursor_instruction{get_number(0, 1), direction::back}
-                };
-
-            case 'P':
-                return {
-                    consumed,
-                    delete_chars_instruction{get_number(0, 1)}
-                };
-
-            case 'X':
-                return {
-                    consumed,
-                    erase_chars_instruction{get_number(0, 1)}
-                };
-
-            case 'M':
-                return {
-                    consumed,
-                    delete_lines_instruction{get_number(0, 1)}
-                };
-
-            case '@':
-                return {
-                    consumed,
-                    insert_blanks_instruction{get_number(0, 1)}
-                };
-
-            case 'L':
-                return {
-                    consumed,
-                    insert_newline_instruction{get_number(0, 1)}
-                };
+        switch(peek(ARGS)) {
+            case ':':
+            case ';':
+                consume(ARGS);
         }
     }
+}
 
-private:
-    decode_result not_enough_data() const
-    {
-        return {0, none_instruction()};
+decode_session_ret decode_csi_priv(
+        COMMON_PARAMS,
+        int const* const params,
+        int const param_count,
+        char const final)
+{
+    RETURN_SUCCESS;
+}
+
+decode_session_ret decode_csi_pub(
+        COMMON_PARAMS,
+        int const* const params,
+        int const param_count,
+        char const final)
+{
+    auto get_number = [&](int index=0, int default_=0) -> int {
+        if (index < param_count && params[index] != 0)
+        {
+            return params[index];
+        }
+
+        return default_;
+    };
+
+    switch(final) {
+        case 'J': {
+            switch(get_number(0)) {
+                case 0:
+                    t.clear_to_bottom();
+                    break;
+                case 1:
+                    t.clear_from_top();
+                    break;
+
+                case 2:
+                default:
+                    t.clear_screen();
+                    break;
+            }
+        } break;
+
+        case 'G':
+        case '`':
+            t.move_to_column(get_number(0, 1) - 1);
+            break;
+
+        case 'd':
+            t.move_to_row(get_number(0, 1) - 1);
+            break;
+
+        case 'f':
+        case 'H':
+            t.position_cursor({
+                std::max(0, get_number(1) - 1),
+                std::max(0, get_number(0) - 1)
+            });
+            break;
+
+        case 'K': {
+            switch(get_number(0)) {
+                case 0:
+                    t.clear_to_end();
+                    break;
+
+                case 1:
+                    t.clear_from_begin();
+                    break;
+
+                case 2:
+                default:
+                    t.clear_line();
+                    break;
+
+            }
+        } break;
+
+        case 'l':
+        case 'h': {
+            bool set = final == 'h';
+            terminal_mode mode;
+            for (int i = 0; true; ++i) {
+                auto number = get_number(i, -1);
+                if (number == -1)
+                    break;
+
+                switch(number) {
+                    case 4:
+                        mode.set(terminal_mode_bit::insert);
+                }
+            }
+
+            t.change_mode_bits(set, mode);
+            break;
+        }
+
+        case 'A':
+            t.move_cursor(get_number(0, 1), direction::up);
+            break;
+
+        case 'B':
+            t.move_cursor(get_number(0, 1), direction::down);
+            break;
+
+        case 'C':
+            t.move_cursor(get_number(0, 1), direction::forward);
+            break;
+
+        case 'D':
+            t.move_cursor(get_number(0, 1), direction::back);
+            break;
+
+        case 'P':
+            t.delete_chars(get_number(0, 1));
+            break;
+
+        case 'X':
+            t.erase_chars(get_number(0, 1));
+            break;
+
+        case 'M':
+            t.delete_lines(get_number(0, 1));
+            break;
+
+        case '@':
+            t.insert_blanks(get_number(0, 1));
+            break;
+
+        case 'L':
+            t.insert_newline(get_number(0, 1));
+            break;
     }
 
-    decode_result discard_consumed() const
-    {
-        return {consumed, none_instruction()};
+    RETURN_SUCCESS;
+}
+
+} // anonymous namespace
+
+void decoder::decode(
+        char const* const new_bytes,
+        int const new_count,
+        decoder_instructee& t)
+{
+    auto index = std::size_t{0};
+
+    while(true) {
+        auto new_index = decode_one(buffer.data(),
+                                    buffer.size(),
+                                    new_bytes,
+                                    static_cast<std::size_t>(new_count),
+                                    index,
+                                    t);
+
+        if (new_index <= index)
+            break;
+
+        index = new_index;
     }
 
-    char consume()
-    {
-        if (consumed < count)
-            return bytes[consumed++];
+    auto new_used = index - buffer.size();
+    auto keep_new = std::clamp(static_cast<std::size_t>(new_count) - new_used, (std::size_t)0, static_cast<std::size_t>(new_count));
 
-        return '\0';
-    }
-
-    char peek() const
-    {
-        if (consumed < count)
-            return bytes[consumed];
-
-        return '\0';
-    }
-
-    int characters_left()
-    {
-        return count - consumed;
-    }
+    buffer.erase(0, index);
+    buffer.append(new_bytes + new_count - keep_new, keep_new);
 };
 
-decode_result decode(char const* const bytes, int const count)
-{
-    decoder d{bytes, count};
-    return d.decode();
-}
 
 } // gd100::

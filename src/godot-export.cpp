@@ -195,7 +195,7 @@ public:
     gd100::terminal terminal;
     int master_descriptor;
     godot_object* instance;
-    std::string write_buffer;
+    gd100::decoder decoder;
 
     terminal_program(gd100::terminal t, int md, godot_object* i)
         : terminal{std::move(t)}
@@ -211,9 +211,8 @@ public:
 
     void handle_bytes(char* bytes, std::size_t count) override
     {
-        write_buffer.append(bytes, count);
-        auto processed = terminal.process_bytes(write_buffer.c_str(), write_buffer.size());
-        write_buffer.erase(0, processed);
+        gd100::terminal_instructee t{&terminal};
+        decoder.decode(bytes, count, t);
 
         auto data = get_terminal_data(&terminal);
         const auto* args = &data;
@@ -225,12 +224,14 @@ public:
 
         api->godot_variant_destroy(&data);
 
+#if 0
         std::cerr << "Received " << count << " bytes.\n";
         for(char* b = bytes; b != bytes + count; ++b) {
             std::cerr << ((int)*b) << " ";
         }
 
         std::cerr << "\n\n\n";
+#endif
     }
 
     void send_code(std::uint64_t code)
@@ -300,7 +301,7 @@ terminal_program* start_program(godot_object* const instance)
 
     close(slavefd);
 
-    auto const size = gd100::extend{102, 27};
+    auto const size = gd100::extend{132, 32};
 
 
     auto const winsz = winsize{

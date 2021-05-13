@@ -11,7 +11,8 @@ add_library(terminal STATIC
     src/terminal.cpp
     src/terminal_screen.cpp
     src/position.cpp
-    src/terminal_decoder.cpp)
+    src/terminal_decoder.cpp
+    src/terminal_instructee.cpp)
 
 target_include_directories(terminal
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
