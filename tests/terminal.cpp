@@ -1,4 +1,5 @@
 #include <utility>
+#include <cstring>
 
 #include <catch2/catch.hpp>
 
@@ -16,11 +17,11 @@ struct test_data {
     }
 };
 
-auto test_term()
+// non square terminal by default so that mixups with width/height will be caught.
+auto test_term(gd100::extend size={5,4})
 {
-    // non square terminal so that mixups with width/height will be caught.
     return test_data{
-            gd100::terminal{{5, 4}},
+            gd100::terminal{size},
             gd100::decoder{}};
 }
 
@@ -180,4 +181,52 @@ TEST_CASE("Carriage return handling", "[carriage-return]") {
 
     tst.process_bytes("\r", 1);
     REQUIRE(tst.t.cursor.pos == gd100::position{0, 0});
+}
+
+TEST_CASE("Tabs", "[tabs]") {
+    auto tst = test_term({20, 4});
+
+    SECTION("Cursor positioning") {
+        REQUIRE(tst.t.cursor.pos == gd100::position{0, 0});
+        tst.process_bytes("\t", 1);
+        REQUIRE(tst.t.cursor.pos == gd100::position{8, 0});
+        tst.process_bytes("\t", 1);
+        REQUIRE(tst.t.cursor.pos == gd100::position{16, 0});
+        tst.process_bytes("Hi", 2);
+        REQUIRE(tst.t.cursor.pos == gd100::position{18, 0});
+        tst.process_bytes("\t", 1);
+        REQUIRE(tst.t.cursor.pos == gd100::position{19, 0});
+    }
+
+    SECTION("Tab at end of line") {
+        tst.process_bytes("\t\t\t\t", 4);
+
+        REQUIRE(tst.t.cursor.pos == gd100::position{19, 0});
+
+        tst.process_bytes("\tX", 2);
+        REQUIRE(tst.t.screen.get_glyph({19, 0}).code == U'X');
+        tst.process_bytes("\t€", std::strlen("\t€"));
+        REQUIRE(tst.t.screen.get_glyph({19, 0}).code == U'€');
+        tst.process_bytes("\t$", 2);
+        REQUIRE(tst.t.screen.get_glyph({19, 0}).code == U'$');
+
+        REQUIRE(tst.t.cursor.pos == gd100::position{19, 0});
+    }
+
+    SECTION("Tab results") {
+        tst.process_bytes("\t", 1); // 0
+        REQUIRE(tst.t.cursor.pos.x == 8);
+
+        tst.process_bytes("\r*\t", 3); // 1
+        REQUIRE(tst.t.cursor.pos.x == 8);
+
+        tst.process_bytes("\r****\t", 6); // 4
+        REQUIRE(tst.t.cursor.pos.x == 8);
+
+        tst.process_bytes("\r*******\t", 9); // 7
+        REQUIRE(tst.t.cursor.pos.x == 8);
+
+        tst.process_bytes("\r********\t", 10); // 8
+        REQUIRE(tst.t.cursor.pos.x == 16);
+    }
 }

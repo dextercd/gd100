@@ -3,6 +3,11 @@
 
 namespace gd100 {
 
+void terminal_instructee::tab()
+{
+    term->tab();
+}
+
 void terminal_instructee::line_feed()
 {
     term->newline(false);

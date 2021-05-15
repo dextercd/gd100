@@ -12,6 +12,13 @@ charset terminal::current_charset() const
     return translation_tables[using_translation_table];
 }
 
+void terminal::tab()
+{
+    auto constexpr tab_size = 8;
+    auto const new_x = cursor.pos.x + tab_size - ((cursor.pos.x + tab_size) % tab_size);
+    move_cursor({new_x, cursor.pos.y});
+}
+
 void terminal::newline(bool first_column)
 {
     if (cursor.pos.y + 1 < screen.size().height) {

@@ -114,6 +114,10 @@ decode_session_ret decode_one(COMMON_PARAMS)
     }
 
     switch(first) {
+        case '\t':
+            t.tab();
+            RETURN_SUCCESS;
+
         case '\f':
         case '\v':
         case '\n':

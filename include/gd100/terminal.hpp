@@ -33,6 +33,7 @@ public:
 
     charset current_charset() const;
 
+    void tab();
     void newline(bool first_column);
     void write_char(code_point ch);
     void move_cursor(position pos);
@@ -62,6 +63,7 @@ struct terminal_instructee : decoder_instructee {
     {
     }
 
+    void tab() override;
     void line_feed() override;
     void carriage_return() override;
     void backspace() override;
