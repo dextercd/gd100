@@ -1,49 +1,65 @@
+#include <utility>
+
 #include <catch2/catch.hpp>
 
 #include <gd100/terminal.hpp>
+#include <gd100/terminal_decoder.hpp>
 
-gd100::terminal test_term()
+struct test_data {
+    gd100::terminal t;
+    gd100::decoder d;
+
+    void process_bytes(char const* const ptr, std::size_t const count)
+    {
+        auto instructee = gd100::terminal_instructee{&t};
+        d.decode(ptr, count, instructee);
+    }
+};
+
+auto test_term()
 {
-    // non square so that mixups with width/height will be caught.
-    return gd100::terminal{{5, 4}};
+    // non square terminal so that mixups with width/height will be caught.
+    return test_data{
+            gd100::terminal{{5, 4}},
+            gd100::decoder{}};
 }
 
 TEST_CASE("Terminal writing", "[write]") {
-    auto t = test_term();
+    auto tst = test_term();
 
     SECTION("After initialisation") {
-        REQUIRE(t.cursor.pos == gd100::position{0, 0});
-        REQUIRE(t.screen.get_line(3)[4].code == 0);
+        REQUIRE(tst.t.cursor.pos == gd100::position{0, 0});
+        REQUIRE(tst.t.screen.get_line(3)[4].code == 0);
     }
 
     SECTION("Writing sets a character and moves the cursor") {
-        t.write_char('A');
+        tst.t.write_char('A');
 
-        REQUIRE(t.screen.get_glyph({0, 0}).code == 'A');
-        REQUIRE(t.cursor.pos == gd100::position{1, 0});
+        REQUIRE(tst.t.screen.get_glyph({0, 0}).code == 'A');
+        REQUIRE(tst.t.cursor.pos == gd100::position{1, 0});
     }
 
     SECTION("Cursor only goes to the next line when placing character there") {
         // Write five times to put the cursor to the end
-        t.write_char('A'); t.write_char('B'); t.write_char('C');
-        t.write_char('D'); t.write_char('E');
+        tst.t.write_char('A'); tst.t.write_char('B'); tst.t.write_char('C');
+        tst.t.write_char('D'); tst.t.write_char('E');
 
-        REQUIRE(t.screen.get_glyph({4, 0}).code == 'E');
-        REQUIRE(t.cursor.pos == gd100::position{4, 0});
+        REQUIRE(tst.t.screen.get_glyph({4, 0}).code == 'E');
+        REQUIRE(tst.t.cursor.pos == gd100::position{4, 0});
 
-        t.write_char('F');
+        tst.t.write_char('F');
 
-        REQUIRE(t.screen.get_glyph({0, 1}).code == 'F');
-        REQUIRE(t.cursor.pos == gd100::position{1, 1});
+        REQUIRE(tst.t.screen.get_glyph({0, 1}).code == 'F');
+        REQUIRE(tst.t.cursor.pos == gd100::position{1, 1});
     }
 }
 
 TEST_CASE("Terminal scrolling", "[scroll]") {
-    auto t = test_term();
+    auto tst = test_term();
 
     auto write_full_line = [&] {
-        t.write_char('A'); t.write_char('B'); t.write_char('C');
-        t.write_char('D'); t.write_char('E');
+        tst.t.write_char('A'); tst.t.write_char('B'); tst.t.write_char('C');
+        tst.t.write_char('D'); tst.t.write_char('E');
     };
 
     SECTION("Should start scrolling when no space left") {
@@ -52,118 +68,116 @@ TEST_CASE("Terminal scrolling", "[scroll]") {
         write_full_line();
         write_full_line();
 
-        REQUIRE(t.cursor.pos == gd100::position{4, 3});
+        REQUIRE(tst.t.cursor.pos == gd100::position{4, 3});
 
-        t.write_char('a');
+        tst.t.write_char('a');
 
-        REQUIRE(t.cursor.pos == gd100::position{1, 3});
+        REQUIRE(tst.t.cursor.pos == gd100::position{1, 3});
     }
 }
 
 TEST_CASE("Terminal driven via decode", "[terminal-decode]") {
-    auto t = test_term();
+    auto tst = test_term();
     SECTION("Basic write") {
         char hw[] = "Hello world!";
-        auto processed = t.process_bytes(hw, sizeof(hw) - 1);
+        tst.process_bytes(hw, sizeof(hw) - 1);
 
-        REQUIRE(processed == sizeof(hw) - 1);
+        REQUIRE(tst.t.screen.get_glyph({0, 0}).code == 'H');
+        REQUIRE(tst.t.screen.get_glyph({4, 0}).code == 'o');
+        REQUIRE(tst.t.screen.get_glyph({0, 1}).code == ' ');
+        REQUIRE(tst.t.screen.get_glyph({4, 1}).code == 'l');
+        REQUIRE(tst.t.screen.get_glyph({0, 2}).code == 'd');
+        REQUIRE(tst.t.screen.get_glyph({1, 2}).code == '!');
 
-        REQUIRE(t.screen.get_glyph({0, 0}).code == 'H');
-        REQUIRE(t.screen.get_glyph({4, 0}).code == 'o');
-        REQUIRE(t.screen.get_glyph({0, 1}).code == ' ');
-        REQUIRE(t.screen.get_glyph({4, 1}).code == 'l');
-        REQUIRE(t.screen.get_glyph({0, 2}).code == 'd');
-        REQUIRE(t.screen.get_glyph({1, 2}).code == '!');
-
-        REQUIRE(t.cursor.pos == gd100::position{2, 2});
+        REQUIRE(tst.t.cursor.pos == gd100::position{2, 2});
     }
 }
 
 TEST_CASE("Backspace", "[backspace]") {
-    auto t = test_term();
+    auto tst = test_term();
 
     SECTION("Backspace at the start of a line") {
-        REQUIRE(t.cursor.pos == gd100::position{0, 0});
-        t.process_bytes("\b", 1);
-        REQUIRE(t.cursor.pos == gd100::position{0, 0});
+        REQUIRE(tst.t.cursor.pos == gd100::position{0, 0});
+        tst.process_bytes("\b", 1);
+        REQUIRE(tst.t.cursor.pos == gd100::position{0, 0});
 
-        t.process_bytes("\n\b", 2);
-        REQUIRE(t.cursor.pos == gd100::position{0, 1});
+        tst.process_bytes("\n\b", 2);
+        REQUIRE(tst.t.cursor.pos == gd100::position{0, 1});
     }
 
     SECTION("Backspacing over a character") {
-        t.process_bytes("Hey", 3);
-        REQUIRE(t.cursor.pos == gd100::position{3, 0});
-        t.process_bytes("\b", 1);
-        REQUIRE(t.cursor.pos == gd100::position{2, 0});
-        t.process_bytes("\b\b\b\b\b", 5);
-        REQUIRE(t.cursor.pos == gd100::position{0, 0});
+        tst.process_bytes("Hey", 3);
+        REQUIRE(tst.t.cursor.pos == gd100::position{3, 0});
+        tst.process_bytes("\b", 1);
+        REQUIRE(tst.t.cursor.pos == gd100::position{2, 0});
+        tst.process_bytes("\b\b\b\b\b", 5);
+        REQUIRE(tst.t.cursor.pos == gd100::position{0, 0});
 
-        REQUIRE(t.screen.get_glyph({1, 0}).code == 'e');
+        REQUIRE(tst.t.screen.get_glyph({1, 0}).code == 'e');
     }
 
     SECTION("Backspace onto new line") {
-        t.process_bytes("12345", 5); // no space left in the first line
-        REQUIRE(t.cursor.pos == gd100::position{4, 0});
+        tst.process_bytes("12345", 5); // no space left in the first line
+        REQUIRE(tst.t.cursor.pos == gd100::position{4, 0});
 
         // some shells use this trick to move the cursor to the next line
-        t.process_bytes(" \b", 2);
-        REQUIRE(t.cursor.pos == gd100::position{0, 1});
+        tst.process_bytes(" \b", 2);
+        REQUIRE(tst.t.cursor.pos == gd100::position{0, 1});
     }
 }
 
 TEST_CASE("Newline handling", "[newline]") {
-    auto t = test_term();
+    auto tst = test_term();
 
     SECTION("Newline basics") {
-        t.process_bytes("\n", 1);
-        REQUIRE(t.cursor.pos == gd100::position{0, 1});
-        t.process_bytes("\n", 1);
-        REQUIRE(t.cursor.pos == gd100::position{0, 2});
-        t.process_bytes("\n", 1);
-        REQUIRE(t.cursor.pos == gd100::position{0, 3});
-        t.process_bytes("\n\n\n", 3); // Should start scrolling and leaving cursor alone
-        REQUIRE(t.cursor.pos == gd100::position{0, 3});
+        tst.process_bytes("\n", 1);
+        REQUIRE(tst.t.cursor.pos == gd100::position{0, 1});
+        tst.process_bytes("\n", 1);
+        REQUIRE(tst.t.cursor.pos == gd100::position{0, 2});
+        tst.process_bytes("\n", 1);
+        REQUIRE(tst.t.cursor.pos == gd100::position{0, 3});
+        tst.process_bytes("\n\n\n", 3); // Should start scrolling and leaving cursor alone
+        REQUIRE(tst.t.cursor.pos == gd100::position{0, 3});
     }
 
     SECTION("Newline in middle") {
-        t.process_bytes("123", 3);
-        t.process_bytes("\n", 1);
-        REQUIRE(t.cursor.pos == gd100::position{3, 1});
+        tst.process_bytes("123", 3);
+        tst.process_bytes("\n", 1);
+        REQUIRE(tst.t.cursor.pos == gd100::position{3, 1});
     }
 
     SECTION("Newline at eol") {
-        t.process_bytes("12345", 5);
-        t.process_bytes("\n", 1);
-        REQUIRE(t.cursor.pos == gd100::position{4, 1});
+        tst.process_bytes("12345", 5);
+        tst.process_bytes("\n", 1);
+        REQUIRE(tst.t.cursor.pos == gd100::position{4, 1});
     }
 
     SECTION("Newline and carriage return") {
-        t.process_bytes("123", 3);
+        tst.process_bytes("123", 3);
         SECTION("CRLF") {
-            t.process_bytes("\r\n", 2);
-            REQUIRE(t.cursor.pos == gd100::position{0, 1});
+            tst.process_bytes("\r\n", 2);
+            REQUIRE(tst.t.cursor.pos == gd100::position{0, 1});
         }
         SECTION("LFCR") {
-            t.process_bytes("\n\r", 2);
-            REQUIRE(t.cursor.pos == gd100::position{0, 1});
+            tst.process_bytes("\n\r", 2);
+            REQUIRE(tst.t.cursor.pos == gd100::position{0, 1});
         }
     }
 }
 
 TEST_CASE("Carriage return handling", "[carriage-return]") {
-    auto t = test_term();
+    auto tst = test_term();
 
-    t.process_bytes("abc\r", 4);
-    REQUIRE(t.cursor.pos == gd100::position{0, 0});
-    REQUIRE(t.screen.get_glyph({0, 0}).code == 'a');
-    REQUIRE(t.screen.get_glyph({1, 0}).code == 'b');
+    tst.process_bytes("abc\r", 4);
+    REQUIRE(tst.t.cursor.pos == gd100::position{0, 0});
+    REQUIRE(tst.t.screen.get_glyph({0, 0}).code == 'a');
+    REQUIRE(tst.t.screen.get_glyph({1, 0}).code == 'b');
 
-    t.process_bytes("1", 1);
-    REQUIRE(t.cursor.pos == gd100::position{1, 0});
-    REQUIRE(t.screen.get_glyph({0, 0}).code == '1');
-    REQUIRE(t.screen.get_glyph({1, 0}).code == 'b');
+    tst.process_bytes("1", 1);
+    REQUIRE(tst.t.cursor.pos == gd100::position{1, 0});
+    REQUIRE(tst.t.screen.get_glyph({0, 0}).code == '1');
+    REQUIRE(tst.t.screen.get_glyph({1, 0}).code == 'b');
 
-    t.process_bytes("\r", 1);
-    REQUIRE(t.cursor.pos == gd100::position{0, 0});
+    tst.process_bytes("\r", 1);
+    REQUIRE(tst.t.cursor.pos == gd100::position{0, 0});
 }
