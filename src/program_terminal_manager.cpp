@@ -1,16 +1,21 @@
 #include <stdexcept>
 #include <iostream>
+#include <cstdio>
 
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/epoll.h>
+#include <poll.h>
 
 #include <gd100/program_terminal_manager.hpp>
 
 namespace gd100 {
 
+constexpr std::size_t read_buffer_size = BUFSIZ;
+
 program_terminal_manager::program_terminal_manager()
+    : read_buffer{new char[read_buffer_size]}
 {
     int pipe_descriptors[2];
     if (pipe2(pipe_descriptors, O_CLOEXEC))
@@ -99,10 +104,27 @@ void program_terminal_manager::controller_loop()
                 if (!program)
                     continue;
 
-                char read_buffer[1024 * 10];
-                auto read_count = read(event.data.fd, read_buffer, sizeof(read_buffer));
+                // We read some input and indicate to the processor whether more
+                // input is expected.  This way the processor can wait before
+                // displaying the data or doing some other expensive operation.
+                auto has_input = true;
+                for (int i = 0; has_input && i != 100; ++i) {
+                    auto const read_count = read(event.data.fd, read_buffer.get(), read_buffer_size);
 
-                program->handle_bytes(read_buffer, read_count);
+                    pollfd poll_has_input;
+                    poll_has_input.fd = event.data.fd;
+                    poll_has_input.events = POLLIN;
+                    auto const pollres = poll(&poll_has_input, 1, 0);
+                    has_input = pollres == 1;
+
+                    program->handle_bytes(read_buffer.get(), read_count, has_input);
+                }
+
+                // Even though more data is in the file descriptor we're not
+                // going to extract it immediately.  This call gives the
+                // processor an opportunity to flush.
+                if (has_input)
+                    program->handle_bytes(nullptr, 0, false);
             }
 
             if (event.events & EPOLLHUP) {

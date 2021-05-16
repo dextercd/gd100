@@ -215,20 +215,22 @@ public:
         close(master_descriptor);
     }
 
-    void handle_bytes(char* bytes, std::size_t count) override
+    void handle_bytes(char* bytes, std::size_t count, bool more_data_coming) override
     {
         gd100::terminal_instructee t{&terminal};
         decoder.decode(bytes, count, t);
 
-        auto data = get_terminal_data(&terminal);
-        const auto* args = &data;
-        object_emit_signal_deferred(
-            instance,
-            api->godot_string_chars_to_utf8("terminal_updated"),
-            1,
-            &args);
+        if (!more_data_coming) {
+            auto data = get_terminal_data(&terminal);
+            const auto* args = &data;
+            object_emit_signal_deferred(
+                instance,
+                api->godot_string_chars_to_utf8("terminal_updated"),
+                1,
+                &args);
 
-        api->godot_variant_destroy(&data);
+            api->godot_variant_destroy(&data);
+        }
 
 #if 0
         std::cerr << "Received " << count << " bytes.\n";

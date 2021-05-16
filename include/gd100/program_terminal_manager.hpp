@@ -36,6 +36,7 @@ private:
 
     std::unordered_map<int, std::unique_ptr<program>> registered;
     std::atomic<bool> stopping = false;
+    std::unique_ptr<char[]> read_buffer;
 };
 
 } // gd100::

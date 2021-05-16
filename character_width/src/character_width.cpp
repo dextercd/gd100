@@ -26,7 +26,7 @@ code_point_range const zero_width_ranges[] {
 // Misc zero width table
 // from https://github.com/jquast/wcwidth
 char32_t const zero_width_misc[]{
-    0,      // Null (Cc)
+    // 0, Handled separately
     0x034f, // Combining grapheme joiner (Mn)
     0x200b, // Zero width space
     0x200c, // Zero width non-joiner
@@ -50,6 +50,20 @@ char32_t const zero_width_misc[]{
 
 int character_width(char32_t code)
 {
+    // Handle ASCII stuff seperately for better performance
+
+    if (code == 0)
+        return 0;
+
+    // c0 c1 control codes
+    if ((code >= 0x00 && code <= 0x1f) || (code >= 0x80 && code <= 0x9f))
+        return -1;
+
+    if (code < 0x80)
+        return 1;
+
+    // Handle the rest of Unicode
+
     auto const zero_width_misc_it = std::find(
         std::begin(zero_width_misc),
         std::end(zero_width_misc),
@@ -57,10 +71,6 @@ int character_width(char32_t code)
 
     if (zero_width_misc_it != std::end(zero_width_misc))
         return 0;
-
-    // c0 c1 control codes
-    if ((code >= 0x00 && code <= 0x1f) || (code >= 0x80 && code <= 0x9f))
-        return -1;
 
     auto const zero_width_it = std::lower_bound(
         std::begin(zero_width_ranges),
