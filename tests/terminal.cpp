@@ -230,3 +230,8 @@ TEST_CASE("Tabs", "[tabs]") {
         REQUIRE(tst.t.cursor.pos.x == 16);
     }
 }
+
+TEST_CASE("Colour", "[colour]") {
+    auto tst = test_term({20, 4});
+    tst.process_bytes("\x1b[38;5;57m", 10);
+}

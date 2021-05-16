@@ -171,4 +171,20 @@ void terminal_instructee::use_charset_table(int table_index)
     term->using_translation_table = table_index;
 }
 
+void terminal_instructee::reset_style()
+{
+    term->reset_style();
+}
+
+void terminal_instructee::set_foreground(colour c)
+{
+    term->cursor.style.fg = c;
+}
+
+void terminal_instructee::set_background(colour c)
+{
+    std::cout << (int)c.r << ";" << (int)c.g << ";" << (int)c.b << '\n';
+    term->cursor.style.bg = c;
+}
+
 } // gd100::

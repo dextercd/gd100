@@ -3,6 +3,7 @@
 #include <charconv>
 
 #include <gd100/terminal_decoder.hpp>
+#include <gd100/colours.hpp>
 
 namespace gd100 {
 
@@ -72,6 +73,11 @@ decode_session_ret decode_csi_pub(
         int const* const params,
         int const param_count,
         char const final);
+
+decode_session_ret decode_set_graphics(
+        COMMON_PARAMS,
+        int const* const params,
+        int const param_count);
 
 std::size_t characters_left(COMMON_PARAMS)
 {
@@ -455,8 +461,80 @@ decode_session_ret decode_csi_pub(
         case 'L':
             t.insert_newline(get_number(0, 1));
             break;
+
+        case 'm':
+            decode_set_graphics(ARGS, params, param_count);
+            break;
     }
 
+    RETURN_SUCCESS;
+}
+
+decode_session_ret decode_set_graphics(
+        COMMON_PARAMS,
+        int const* const params,
+        int const param_count)
+{
+    auto get_number = [&](int index=0, int default_=0) -> int {
+        if (index < param_count && params[index] != 0)
+        {
+            return params[index];
+        }
+
+        return default_;
+    };
+
+    auto bold = false;
+    for(int i{}; i == 0 || i < param_count; ++i) {
+        auto num = get_number(i);
+        switch(num) {
+            case 0:
+                t.reset_style();
+                bold = false;
+                break;
+
+            case 1:
+                bold = true;
+                break;
+
+            case 38:
+            case 48: {
+                auto is_foreground = num == 38;
+                auto col = colour{};
+                switch (get_number(i + 1)) {
+                    case 5:
+                        col = eight_bit_lookup(get_number(i + 2));
+                        i += 2;
+                        break;
+
+                    case 2:
+                        col = colour{
+                            (std::uint8_t)std::clamp(get_number(i + 2), 0, 255),
+                            (std::uint8_t)std::clamp(get_number(i + 3), 0, 255),
+                            (std::uint8_t)std::clamp(get_number(i + 4), 0, 255),
+                        };
+                        i += 4;
+                        break;
+
+                    default:
+                        RETURN_SUCCESS;
+                }
+
+                if (is_foreground) t.set_foreground(col);
+                else               t.set_background(col);
+            } break;
+
+            default:
+                if (num >= 30 && num <= 37)
+                    t.set_foreground(sgr_colours[num - 30 + (bold ? 8 : 0)]);
+                if (num >= 90 && num <= 97)
+                    t.set_foreground(sgr_colours[num - 90 + 8]);
+                if (num >= 40 && num <= 47)
+                    t.set_background(sgr_colours[num - 40 + (bold ? 8 : 0)]);
+                if (num >= 100 && num <= 107)
+                    t.set_background(sgr_colours[num - 100 + 8]);
+        }
+    }
     RETURN_SUCCESS;
 }
 

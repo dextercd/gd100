@@ -49,6 +49,7 @@ public:
     void delete_chars(int count);
     void insert_blanks(int count);
     void insert_newline(int count);
+    void reset_style();
     void dump();
 
 private:
@@ -87,6 +88,9 @@ struct terminal_instructee : decoder_instructee {
     void insert_newline(int count) override;
     void set_charset_table(int table_index, charset cs) override;
     void use_charset_table(int table_index) override;
+    void reset_style() override;
+    void set_foreground(colour c) override;
+    void set_background(colour c) override;
 };
 
 

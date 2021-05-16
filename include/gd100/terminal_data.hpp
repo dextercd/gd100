@@ -12,7 +12,7 @@ class cursor_state : public bit_container<cursor_state_bit> {
 };
 
 struct terminal_cursor {
-    glyph_style style;
+    glyph_style style = {{255, 255, 255}, {0, 0, 0}, glyph_attribute{}};
     cursor_state state;
     position pos;
 };

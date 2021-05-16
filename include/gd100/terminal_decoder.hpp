@@ -39,6 +39,9 @@ public:
     virtual void insert_newline(int count) = 0;
     virtual void set_charset_table(int table_index, charset cs) = 0;
     virtual void use_charset_table(int table_index) = 0;
+    virtual void reset_style() = 0;
+    virtual void set_foreground(colour c) = 0;
+    virtual void set_background(colour c) = 0;
 };
 
 class decoder {

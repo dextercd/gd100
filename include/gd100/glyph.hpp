@@ -18,7 +18,11 @@ class glyph_attribute : public bit_container<glyph_attr_bit> {
     using bit_container::bit_container;
 };
 
-class color {};
+struct colour {
+    std::uint8_t r;
+    std::uint8_t g;
+    std::uint8_t b;
+};
 
 using code_point = std::uint32_t;
 
@@ -28,8 +32,8 @@ struct extend {
 };
 
 struct glyph_style {
-    color fg;
-    color bg;
+    colour fg;
+    colour bg;
     glyph_attribute mode;
 };
 

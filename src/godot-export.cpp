@@ -80,12 +80,57 @@ godot_variant get_glyph(gd100::terminal const* const term, int const row, int co
         api->godot_string_destroy(&code_point_key_string);
     }
 
+    godot_variant fg_key;
+    {
+        godot_string fg_key_string;
+        api->godot_string_new_with_wide_string(&fg_key_string, L"fg", 2);
+        api->godot_variant_new_string(&fg_key, &fg_key_string);
+        api->godot_string_destroy(&fg_key_string);
+    }
+
+    godot_variant bg_key;
+    {
+        godot_string bg_key_string;
+        api->godot_string_new_with_wide_string(&bg_key_string, L"bg", 2);
+        api->godot_variant_new_string(&bg_key, &bg_key_string);
+        api->godot_string_destroy(&bg_key_string);
+    }
+
+    auto glyph = term->screen.get_glyph({column, row});
+
+    godot_color fg_col;
+    api->godot_color_new_rgb(&fg_col,
+        glyph.style.fg.r / 255.0,
+        glyph.style.fg.g / 255.0,
+        glyph.style.fg.b / 255.0);
+
+    godot_variant fg;
+    api->godot_variant_new_color(&fg, &fg_col);
+
+    godot_color bg_col;
+    api->godot_color_new_rgb(&bg_col,
+        glyph.style.bg.r / 255.0,
+        glyph.style.bg.g / 255.0,
+        glyph.style.bg.b / 255.0);
+
+    godot_variant bg;
+    api->godot_variant_new_color(&bg, &bg_col);
+
+    api->godot_dictionary_set(&glyph_dict, &fg_key, &fg);
+    api->godot_dictionary_set(&glyph_dict, &bg_key, &bg);
+
+    api->godot_variant_destroy(&bg);
+    api->godot_variant_destroy(&fg);
+
+    api->godot_variant_destroy(&bg_key);
+    api->godot_variant_destroy(&fg_key);
+
     godot_variant code_point;
-    api->godot_variant_new_int(&code_point, term->screen.get_glyph({column, row}).code);
+    api->godot_variant_new_int(&code_point, glyph.code);
 
     api->godot_dictionary_set(&glyph_dict, &code_point_key, &code_point);
-    api->godot_variant_destroy(&code_point_key);
     api->godot_variant_destroy(&code_point);
+    api->godot_variant_destroy(&code_point_key);
 
     godot_variant ret;
     api->godot_variant_new_dictionary(&ret, &glyph_dict);
