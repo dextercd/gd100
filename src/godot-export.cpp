@@ -296,7 +296,14 @@ terminal_program* start_program(godot_object* const instance)
         dup2(slavefd, 0);
         dup2(slavefd, 1);
         dup2(slavefd, 2);
-        execl("/bin/sh", "sh", (char*)nullptr);
+
+        char* const args[]{
+            "sh",
+            nullptr,
+        };
+
+        setenv("TERM", "gdterm", 1);
+        execvp("sh", args);
     }
 
     if (fork_result == -1) {
