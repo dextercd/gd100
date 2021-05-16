@@ -110,6 +110,8 @@ void program_terminal_manager::controller_loop()
                 auto has_input = true;
                 for (int i = 0; has_input && i != 100; ++i) {
                     auto const read_count = read(event.data.fd, read_buffer.get(), read_buffer_size);
+                    if (read_count == -1)
+                        break;
 
                     pollfd poll_has_input;
                     poll_has_input.fd = event.data.fd;
