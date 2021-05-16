@@ -81,7 +81,6 @@ void terminal_instructee::clear_line()
 
 void terminal_instructee::position_cursor(position pos)
 {
-    std::cout << "H: " << pos << "\n";
     term->move_cursor(pos);
 }
 
