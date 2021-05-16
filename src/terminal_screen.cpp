@@ -4,13 +4,15 @@ namespace gd100 {
 
 terminal_screen::terminal_screen(extend screen_sz)
     : m_size{screen_sz}
-    , data{new glyph[m_size.width * m_size.height]{}}
 {
+    lines.resize(m_size.height);
+    for(auto& line : lines)
+        line.reset(new glyph[m_size.width]{});
 }
 
 glyph* terminal_screen::get_line(int line)
 {
-    return &data[line * m_size.width];
+    return lines[line].get();
 }
 
 glyph& terminal_screen::get_glyph(position pos)
@@ -20,7 +22,7 @@ glyph& terminal_screen::get_glyph(position pos)
 
 const glyph* terminal_screen::get_line(int line) const
 {
-    return &data[line * m_size.width];
+    return lines[line].get();
 }
 
 const glyph& terminal_screen::get_glyph(position pos) const

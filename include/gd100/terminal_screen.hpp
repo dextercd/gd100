@@ -1,6 +1,7 @@
 #ifndef GDTERM_TERMINAL_SCREEN_HPP
 #define GDTERM_TERMINAL_SCREEN_HPP
 
+#include <vector>
 #include <memory>
 
 #include "glyph.hpp"
@@ -10,9 +11,10 @@ namespace gd100 {
 class terminal_screen {
 private:
     extend m_size;
-    std::unique_ptr<glyph[]> data;
 
 public:
+    std::vector<std::unique_ptr<glyph[]>> lines;
+
     terminal_screen()
         : terminal_screen({80, 25})
     {

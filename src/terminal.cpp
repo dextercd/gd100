@@ -125,38 +125,34 @@ void terminal::mark_dirty(int line_beg, int line_end)
 
 void terminal::scroll_up(int keep_top, int count)
 {
-    int move_to = std::clamp(keep_top, 0, screen.size().height);
-    int move_start = std::clamp(move_to + count, 0, screen.size().height);
+    int move_start = std::clamp(keep_top, 0, screen.size().height);
     int move_end = screen.size().height;
+    int move_to = std::clamp(move_start + count, 0, screen.size().height);
 
-    std::move(
-        screen.get_line(move_start),
-        screen.get_line(move_end), // pointer past last glyph
-        screen.get_line(move_to));
+    std::rotate(
+        screen.lines.begin() + move_start,
+        screen.lines.begin() + move_to,
+        screen.lines.begin() + move_end);
 
     clear_lines(move_end - count, move_end);
 
-    mark_dirty(move_to, move_end);
+    mark_dirty(move_start, move_end);
 }
 
 void terminal::scroll_down(int keep_top, int count)
 {
-    auto const height = screen.size().height;
+    int move_start = std::clamp(keep_top, 0, screen.size().height);
+    int move_end = screen.size().height;
+    int move_to = std::clamp(move_end - count, 0, screen.size().height);
 
-    keep_top = std::clamp(keep_top, 0, height);
-    count = std::clamp(count, 0, height - keep_top);
+    std::rotate(
+        screen.lines.begin() + move_start,
+        screen.lines.begin() + move_to,
+        screen.lines.begin() + move_end);
 
-    auto const move_count = height - keep_top - count;
-    auto const line_end = keep_top + move_count;
+    clear_lines(move_end - count, move_end);
 
-    std::move_backward(
-        screen.get_line(keep_top),
-        screen.get_line(line_end),
-        screen.get_line(height));
-
-    clear_lines(keep_top, keep_top + count);
-
-    mark_dirty(keep_top, height);
+    mark_dirty(move_start, move_end);
 }
 
 void terminal::clear_lines(int line_beg, int line_end)
@@ -169,7 +165,13 @@ void terminal::clear_lines(int line_beg, int line_end)
         code_point{0}
     };
 
-    std::fill(screen.get_line(line_beg), screen.get_line(line_end), fill_glyph);
+    for(; line_beg != line_end; ++line_beg) {
+        std::fill(
+            screen.get_line(line_beg),
+            screen.get_line(line_beg) + screen.size().width,
+            fill_glyph);
+    }
+
     mark_dirty(line_beg, line_end);
 }
 
@@ -178,15 +180,26 @@ void terminal::clear(position start, position end)
     start = clamp_pos(start);
     end = clamp_pos(end);
 
+    if ((start.y > end.y) ||
+        (start.y == end.y && start.x > end.x)) {
+        return;
+    }
+
     auto const fill_glyph = glyph{
         glyph_style{cursor.style.fg, cursor.style.bg, {}},
         code_point{0}
     };
 
-    std::fill(
-        screen.get_line(start.y) + start.x,
-        screen.get_line(end.y) + end.x + 1,
-        fill_glyph);
+    auto it = start;
+    while(it != end) {
+        screen.get_glyph(it) = fill_glyph;
+        ++it.x;
+        if (it.x == screen.size().width) {
+            it.x = 0;
+            ++it.y;
+        }
+    }
+    screen.get_glyph(end) = fill_glyph;
 
     mark_dirty(start.y, end.y);
 }
