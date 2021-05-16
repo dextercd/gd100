@@ -13,7 +13,8 @@ private:
     extend m_size;
 
 public:
-    std::vector<std::unique_ptr<glyph[]>> lines;
+    std::unique_ptr<glyph[]> data;
+    std::vector<glyph*> lines;
 
     terminal_screen()
         : terminal_screen({80, 25})
