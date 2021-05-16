@@ -199,7 +199,7 @@ void terminal::delete_chars(int count)
         screen.get_line(cursor.pos.y) + screen.size().width,
         screen.get_line(cursor.pos.y) + cursor.pos.x);
 
-    clear({screen.size().width - 1 - count, cursor.pos.y},
+    clear({screen.size().width - count, cursor.pos.y},
           {screen.size().width - 1, cursor.pos.y});
 }
 
