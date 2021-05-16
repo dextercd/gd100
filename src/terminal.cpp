@@ -180,10 +180,8 @@ void terminal::clear(position start, position end)
     start = clamp_pos(start);
     end = clamp_pos(end);
 
-    if ((start.y > end.y) ||
-        (start.y == end.y && start.x > end.x)) {
+    if ((start.y > end.y) || (start.y == end.y && start.x > end.x))
         return;
-    }
 
     auto const fill_glyph = glyph{
         glyph_style{cursor.style.fg, cursor.style.bg, {}},
