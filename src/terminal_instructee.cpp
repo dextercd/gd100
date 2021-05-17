@@ -187,4 +187,12 @@ void terminal_instructee::set_background(colour c)
     term->cursor.style.bg = c;
 }
 
+void terminal_instructee::set_reversed(bool enable)
+{
+    if (enable)
+        term->cursor.style.mode.set(glyph_attr_bit::reversed);
+    else
+        term->cursor.style.mode.unset(glyph_attr_bit::reversed);
+}
+
 } // gd100::

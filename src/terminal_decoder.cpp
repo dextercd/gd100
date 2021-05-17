@@ -497,6 +497,14 @@ decode_session_ret decode_set_graphics(
                 bold = true;
                 break;
 
+            case 7:
+                t.set_reversed(true);
+                break;
+
+            case 27:
+                t.set_reversed(false);
+                break;
+
             case 38:
             case 48: {
                 auto is_foreground = num == 38;

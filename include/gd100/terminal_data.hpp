@@ -11,8 +11,10 @@ class cursor_state : public bit_container<cursor_state_bit> {
     using bit_container::bit_container;
 };
 
+constexpr auto default_style = glyph_style{{255, 255, 255}, {0, 0, 0}, glyph_attribute{}};
+
 struct terminal_cursor {
-    glyph_style style = {{255, 255, 255}, {0, 0, 0}, glyph_attribute{}};
+    glyph_style style = default_style;
     cursor_state state;
     position pos;
 };

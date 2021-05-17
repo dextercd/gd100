@@ -272,8 +272,7 @@ position terminal::clamp_pos(position p)
 
 void terminal::reset_style()
 {
-    cursor.style.fg = {255, 255, 255};
-    cursor.style.bg = {0, 0, 0};
+    cursor.style = default_style;
 }
 
 } // gd100::

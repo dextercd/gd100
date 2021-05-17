@@ -91,6 +91,7 @@ struct terminal_instructee : decoder_instructee {
     void reset_style() override;
     void set_foreground(colour c) override;
     void set_background(colour c) override;
+    void set_reversed(bool enable) override;
 };
 
 

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <thread>
 #include <string>
+#include <utility>
 
 #include <gdnative_api_struct.gen.h>
 
@@ -95,6 +96,9 @@ godot_variant get_glyph(gd100::terminal const* const term, int const row, int co
 
     godot_variant bg;
     api->godot_variant_new_color(&bg, &bg_col);
+
+    if (glyph.style.mode.is_set(gd100::glyph_attr_bit::reversed))
+        std::swap(fg, bg);
 
     api->godot_dictionary_set(&glyph_dict, &fg_key, &fg);
     api->godot_dictionary_set(&glyph_dict, &bg_key, &bg);
@@ -316,7 +320,7 @@ terminal_program* start_program(godot_object* const instance)
 
     close(slavefd);
 
-    auto const size = gd100::extend{132, 32};
+    auto const size = gd100::extend{132, 35};
 
 
     auto const winsz = winsize{
