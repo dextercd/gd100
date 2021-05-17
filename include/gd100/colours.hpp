@@ -7,8 +7,8 @@ namespace gd100 {
 
 constexpr colour sgr_colours[16]{
     {0, 0, 0},       // black
-    {137, 22, 22},   // red
-    {57, 111, 68},   // green
+    {177, 22, 22},   // red
+    {17, 154, 18},   // green
     {198, 195, 13},  // yellow
     {12, 8, 140},    // blue
     {117, 24, 145},  // magenta
