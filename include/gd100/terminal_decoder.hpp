@@ -45,6 +45,7 @@ public:
     virtual void set_reversed(bool enable) = 0;
     virtual void default_foreground() = 0;
     virtual void default_background() = 0;
+    virtual void set_bold(bool enable) = 0;
 };
 
 class decoder {

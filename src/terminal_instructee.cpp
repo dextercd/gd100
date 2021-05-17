@@ -204,4 +204,12 @@ void terminal_instructee::default_background()
     term->cursor.style.bg = default_style.bg;
 }
 
+void terminal_instructee::set_bold(bool enable)
+{
+    if (enable)
+        term->cursor.style.mode.set(glyph_attr_bit::bold);
+    else
+        term->cursor.style.mode.unset(glyph_attr_bit::bold);
+}
+
 } // gd100::

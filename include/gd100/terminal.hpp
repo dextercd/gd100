@@ -94,6 +94,7 @@ struct terminal_instructee : decoder_instructee {
     void set_reversed(bool enable) override;
     void default_foreground() override;
     void default_background() override;
+    void set_bold(bool enable) override;
 };
 
 

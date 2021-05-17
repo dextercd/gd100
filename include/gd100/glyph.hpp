@@ -13,6 +13,7 @@ enum class glyph_attr_bit {
     wide       = 1 << 1,
     wdummy     = 1 << 2, // space occupied by previous wide character
     reversed   = 1 << 3,
+    bold       = 1 << 4,
 };
 
 class glyph_attribute : public bit_container<glyph_attr_bit> {

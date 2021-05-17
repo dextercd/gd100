@@ -484,17 +484,19 @@ decode_session_ret decode_set_graphics(
         return default_;
     };
 
-    auto bold = false;
     for(int i{}; i == 0 || i < param_count; ++i) {
         auto num = get_number(i);
         switch(num) {
             case 0:
                 t.reset_style();
-                bold = false;
                 break;
 
             case 1:
-                bold = true;
+                t.set_bold(true);
+                break;
+
+            case 22:
+                t.set_bold(false);
                 break;
 
             case 7:
@@ -542,11 +544,11 @@ decode_session_ret decode_set_graphics(
 
             default:
                 if (num >= 30 && num <= 37)
-                    t.set_foreground(sgr_colours[num - 30 + (bold ? 8 : 0)]);
+                    t.set_foreground(sgr_colours[num - 30]);
                 if (num >= 90 && num <= 97)
                     t.set_foreground(sgr_colours[num - 90 + 8]);
                 if (num >= 40 && num <= 47)
-                    t.set_background(sgr_colours[num - 40 + (bold ? 8 : 0)]);
+                    t.set_background(sgr_colours[num - 40]);
                 if (num >= 100 && num <= 107)
                     t.set_background(sgr_colours[num - 100 + 8]);
         }
