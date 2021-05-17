@@ -183,7 +183,6 @@ void terminal_instructee::set_foreground(colour c)
 
 void terminal_instructee::set_background(colour c)
 {
-    std::cout << (int)c.r << ";" << (int)c.g << ";" << (int)c.b << '\n';
     term->cursor.style.bg = c;
 }
 
