@@ -10,7 +10,7 @@ constexpr colour sgr_colours[16]{
     {177, 22, 22},   // red
     {17, 154, 18},   // green
     {198, 195, 13},  // yellow
-    {12, 8, 140},    // blue
+    {12, 34, 190},    // blue
     {117, 24, 145},  // magenta
     {37, 106, 119},  // cyan
     {200, 200, 200}, // white
