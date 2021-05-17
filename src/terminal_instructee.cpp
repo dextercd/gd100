@@ -195,4 +195,14 @@ void terminal_instructee::set_reversed(bool enable)
         term->cursor.style.mode.unset(glyph_attr_bit::reversed);
 }
 
+void terminal_instructee::default_foreground()
+{
+    term->cursor.style.fg = default_style.fg;
+}
+
+void terminal_instructee::default_background()
+{
+    term->cursor.style.bg = default_style.bg;
+}
+
 } // gd100::

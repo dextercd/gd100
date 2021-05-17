@@ -532,6 +532,14 @@ decode_session_ret decode_set_graphics(
                 else               t.set_background(col);
             } break;
 
+            case 39:
+                t.default_foreground();
+                break;
+
+            case 49:
+                t.default_background();
+                break;
+
             default:
                 if (num >= 30 && num <= 37)
                     t.set_foreground(sgr_colours[num - 30 + (bold ? 8 : 0)]);

@@ -43,6 +43,8 @@ public:
     virtual void set_foreground(colour c) = 0;
     virtual void set_background(colour c) = 0;
     virtual void set_reversed(bool enable) = 0;
+    virtual void default_foreground() = 0;
+    virtual void default_background() = 0;
 };
 
 class decoder {
