@@ -46,6 +46,7 @@ public:
     virtual void default_foreground() = 0;
     virtual void default_background() = 0;
     virtual void set_bold(bool enable) = 0;
+    virtual void set_mouse_mode(mouse_mode, bool set) = 0;
 };
 
 class decoder {

@@ -79,6 +79,18 @@ decode_session_ret decode_set_graphics(
         int const* const params,
         int const param_count);
 
+decode_session_ret decode_private_set(
+        COMMON_PARAMS,
+        int const* const params,
+        int const param_count,
+        bool const set);
+
+decode_session_ret decode_public_set(
+        COMMON_PARAMS,
+        int const* const params,
+        int const param_count,
+        bool const set);
+
 std::size_t characters_left(COMMON_PARAMS)
 {
     return buffer_one_size + buffer_two_size - index;
@@ -337,6 +349,12 @@ decode_session_ret decode_csi_priv(
         int const param_count,
         char const final)
 {
+    switch (final) {
+        case 'l':
+        case 'h':
+            return decode_private_set(ARGS, params, param_count, final == 'h');
+    }
+
     RETURN_SUCCESS;
 }
 
@@ -408,23 +426,8 @@ decode_session_ret decode_csi_pub(
         } break;
 
         case 'l':
-        case 'h': {
-            bool set = final == 'h';
-            terminal_mode mode;
-            for (int i = 0; true; ++i) {
-                auto number = get_number(i, -1);
-                if (number == -1)
-                    break;
-
-                switch(number) {
-                    case 4:
-                        mode.set(terminal_mode_bit::insert);
-                }
-            }
-
-            t.change_mode_bits(set, mode);
-            break;
-        }
+        case 'h':
+            return decode_public_set(ARGS, params, param_count, final == 'h');
 
         case 'A':
             t.move_cursor(get_number(0, 1), direction::up);
@@ -466,6 +469,60 @@ decode_session_ret decode_csi_pub(
             decode_set_graphics(ARGS, params, param_count);
             break;
     }
+
+    RETURN_SUCCESS;
+}
+
+decode_session_ret decode_private_set(
+        COMMON_PARAMS,
+        int const* const params,
+        int const param_count,
+        bool const set)
+{
+    for (int i = 0; i != param_count; ++i) {
+        switch(params[i]) {
+            case 9:
+                t.set_mouse_mode(mouse_mode::x10, set);
+                break;
+
+            case 1000:
+                t.set_mouse_mode(mouse_mode::button, set);
+                break;
+
+            case 1002:
+                t.set_mouse_mode(mouse_mode::motion, set);
+                break;
+
+            case 1003:
+                t.set_mouse_mode(mouse_mode::many, set);
+                break;
+
+            case 1006:
+                t.set_mouse_mode(mouse_mode::extended, set);
+                break;
+        }
+    }
+
+    RETURN_SUCCESS;
+}
+
+decode_session_ret decode_public_set(
+        COMMON_PARAMS,
+        int const* const params,
+        int const param_count,
+        bool const set)
+{
+    terminal_mode mode;
+    for (int i = 0; i < param_count; ++i) {
+        auto number = params[i];
+
+        switch(number) {
+            case 4:
+                mode.set(terminal_mode_bit::insert);
+        }
+    }
+
+    t.change_mode_bits(set, mode);
 
     RETURN_SUCCESS;
 }

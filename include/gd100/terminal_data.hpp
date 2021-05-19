@@ -23,6 +23,15 @@ enum class terminal_mode_bit {
     insert = 1 << 0,
 };
 
+enum class mouse_mode {
+    none,
+    x10,
+    button,
+    motion,
+    many,
+    extended,
+};
+
 class terminal_mode : public bit_container<terminal_mode_bit> {
     using bit_container::bit_container;
 };

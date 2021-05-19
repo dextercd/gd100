@@ -17,6 +17,7 @@ public:
     terminal_cursor cursor{};
     terminal_screen screen{};
     terminal_mode mode{};
+    mouse_mode mouse{};
 
 private:
     charset translation_tables[4] = {
@@ -95,6 +96,7 @@ struct terminal_instructee : decoder_instructee {
     void default_foreground() override;
     void default_background() override;
     void set_bold(bool enable) override;
+    void set_mouse_mode(mouse_mode, bool set) override;
 };
 
 

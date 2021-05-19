@@ -212,4 +212,12 @@ void terminal_instructee::set_bold(bool enable)
         term->cursor.style.mode.unset(glyph_attr_bit::bold);
 }
 
+void terminal_instructee::set_mouse_mode(mouse_mode mode, bool set)
+{
+    if (set)
+        term->mouse = mode;
+    else
+        term->mouse = mouse_mode::none;
+}
+
 } // gd100::
