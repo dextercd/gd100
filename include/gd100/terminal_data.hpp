@@ -21,6 +21,7 @@ struct terminal_cursor {
 
 enum class terminal_mode_bit {
     insert = 1 << 0,
+    extended_mouse = 1 << 1,
 };
 
 enum class mouse_mode {
@@ -29,7 +30,6 @@ enum class mouse_mode {
     button,
     motion,
     many,
-    extended,
 };
 
 class terminal_mode : public bit_container<terminal_mode_bit> {

@@ -97,6 +97,7 @@ struct terminal_instructee : decoder_instructee {
     void default_background() override;
     void set_bold(bool enable) override;
     void set_mouse_mode(mouse_mode, bool set) override;
+    void set_mouse_mode_extended(bool set) override;
 };
 
 

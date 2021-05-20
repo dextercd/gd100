@@ -220,4 +220,12 @@ void terminal_instructee::set_mouse_mode(mouse_mode mode, bool set)
         term->mouse = mouse_mode::none;
 }
 
+void terminal_instructee::set_mouse_mode_extended(bool set)
+{
+    if (set)
+        term->mode.set(terminal_mode_bit::extended_mouse);
+    else
+        term->mode.unset(terminal_mode_bit::extended_mouse);
+}
+
 } // gd100::
