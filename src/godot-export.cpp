@@ -141,7 +141,7 @@ godot_variant get_line(gd100::terminal const* const term, int const line)
     return ret;
 }
 
-godot_variant get_lines(gd100::terminal* term)
+godot_variant get_lines(gd100::terminal const* const term)
 {
     godot_dictionary line_dict;
     api->godot_dictionary_new(&line_dict);
@@ -180,7 +180,7 @@ godot_variant get_cursor(gd100::terminal const* const term)
 godot_variant lines_key;
 godot_variant cursor_key;
 
-godot_variant get_terminal_data(gd100::terminal* term)
+godot_variant get_terminal_data(const gd100::terminal* const term)
 {
     godot_dictionary term_dict;
     api->godot_dictionary_new(&term_dict);
@@ -269,7 +269,7 @@ public:
     int previous_y = -1;
     terminal_mouse_button held_button = terminal_mouse_button::none;
 
-    terminal_program(gd100::terminal t, int md, godot_object* i)
+    terminal_program(gd100::terminal t, int const md, godot_object* const i)
         : terminal{std::move(t)}
         , master_descriptor{md}
         , instance{i}
@@ -281,7 +281,7 @@ public:
         close(master_descriptor);
     }
 
-    void handle_bytes(char* bytes, std::size_t count, bool more_data_coming) override
+    void handle_bytes(const char* bytes, std::size_t const count, bool const more_data_coming) override
     {
         auto lock = std::scoped_lock{terminal_mutex};
 
@@ -310,7 +310,7 @@ public:
 #endif
     }
 
-    void send_code(std::uint64_t code)
+    void send_code(gd100::code_point const code)
     {
         std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
         std::string u8str = converter.to_bytes(code);
@@ -399,11 +399,11 @@ public:
 };
 
 godot_variant send_code_method(
-        godot_object *obj,
-        void *method_data,
-        void *user_data,
-        int num_args,
-        godot_variant **args)
+        godot_object* const obj,
+        void* const method_data,
+        void* const user_data,
+        int const num_args,
+        godot_variant** const args)
 {
     if (num_args != 1) {
         godot_variant ret;
@@ -411,7 +411,7 @@ godot_variant send_code_method(
         return ret;
     }
 
-    auto code = api->godot_variant_as_int(args[0]);
+    auto const code = api->godot_variant_as_int(args[0]);
 
     auto term = reinterpret_cast<terminal_program*>(user_data);
     term->send_code(code);
@@ -422,11 +422,11 @@ godot_variant send_code_method(
 }
 
 godot_variant send_mouse_method(
-        godot_object *obj,
-        void *method_data,
-        void *user_data,
-        int num_args,
-        godot_variant **args)
+        godot_object* const obj,
+        void* const method_data,
+        void* const user_data,
+        int const num_args,
+        godot_variant** const args)
 {
     if (num_args != 4) {
         godot_variant ret;
@@ -451,15 +451,15 @@ godot_variant send_mouse_method(
 
 terminal_program* start_program(godot_object* const instance)
 {
-    auto masterfd = posix_openpt(O_RDWR | O_NOCTTY);
+    auto const masterfd = posix_openpt(O_RDWR | O_NOCTTY);
     grantpt(masterfd);
     unlockpt(masterfd);
-    auto slavename = ptsname(masterfd);
-    auto slavefd = open(slavename, O_RDWR | O_NOCTTY);
+    auto const slavename = ptsname(masterfd);
+    auto const slavefd = open(slavename, O_RDWR | O_NOCTTY);
     if (slavefd < 0) {
         throw std::runtime_error{"Opening pseudoterminal slave failed."};
     }
-    auto fork_result = fork();
+    auto const fork_result = fork();
 
     // child
     if (fork_result == 0) {
@@ -619,11 +619,11 @@ void GDTERM_EXPORT godot_nativescript_init(void* desc)
         "TerminalLogic",
         &signal);
 
-    godot_method_attributes attr{
+    godot_method_attributes const attr{
         GODOT_METHOD_RPC_MODE_DISABLED
     };
 
-    auto sc_method = godot_instance_method{
+    auto const sc_method = godot_instance_method{
         send_code_method,
         nullptr, nullptr,
     };
@@ -635,7 +635,7 @@ void GDTERM_EXPORT godot_nativescript_init(void* desc)
         attr,
         sc_method);
 
-    auto sm_method = godot_instance_method{
+    auto const sm_method = godot_instance_method{
         send_mouse_method,
         nullptr, nullptr,
     };
