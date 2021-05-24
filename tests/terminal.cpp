@@ -235,3 +235,18 @@ TEST_CASE("Colour", "[colour]") {
     auto tst = test_term({20, 4});
     tst.process_bytes("\x1b[38;5;57m", 10);
 }
+
+TEST_CASE("Double wide", "[double-wide]") {
+    auto tst = test_term({5, 3});
+    char const data1[] = "\n🍆\nXY";
+    tst.process_bytes(data1, sizeof(data1) - 1);
+    REQUIRE(tst.t.screen.get_glyph({0, 1}).code == U'🍆');
+    REQUIRE(tst.t.screen.get_glyph({0, 1}).style.mode.is_set(gd100::glyph_attr_bit::wide));
+    REQUIRE(tst.t.screen.get_glyph({1, 1}).code == 0);
+    REQUIRE(tst.t.screen.get_glyph({1, 1}).style.mode == gd100::glyph_attr_bit::wdummy);
+
+    char const data2[] = "\n";
+    tst.process_bytes(data2, sizeof(data2) - 1);
+    REQUIRE(tst.t.screen.get_glyph({0, 0}).code == U'🍆');
+    REQUIRE(tst.t.screen.get_glyph({1, 0}).code == 0);
+}
