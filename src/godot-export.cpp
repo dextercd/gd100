@@ -5,6 +5,8 @@
 #include <thread>
 #include <string>
 #include <utility>
+#include <mutex>
+#include <cstdio>
 
 #include <gdnative_api_struct.gen.h>
 
@@ -200,12 +202,72 @@ godot_variant get_terminal_data(gd100::terminal* term)
     return ret;
 }
 
+enum class godot_mouse_button : int {
+    none = 0,
+    left = 1,
+    right = 2,
+    middle = 3,
+    wheel_up = 4,
+    wheel_down = 5,
+};
+
+enum class terminal_mouse_button : int {
+    none = 0,
+    left = 1,
+    middle = 2,
+    right = 3,
+    wheel_up = 4,
+    wheel_down = 5,
+};
+
+terminal_mouse_button to_terminal_mouse(godot_mouse_button m)
+{
+    switch(m) {
+        case godot_mouse_button::left:       return terminal_mouse_button::left;
+        case godot_mouse_button::right:      return terminal_mouse_button::right;
+        case godot_mouse_button::middle:     return terminal_mouse_button::middle;
+        case godot_mouse_button::wheel_up:   return terminal_mouse_button::wheel_up;
+        case godot_mouse_button::wheel_down: return terminal_mouse_button::wheel_down;
+
+        default:
+            return terminal_mouse_button::none;
+    }
+}
+
+bool can_be_held(terminal_mouse_button m)
+{
+    switch(m) {
+        case terminal_mouse_button::left:
+        case terminal_mouse_button::middle:
+        case terminal_mouse_button::right:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
 class terminal_program : public gd100::program {
 public:
     gd100::terminal terminal;
     int master_descriptor;
     godot_object* instance;
     gd100::decoder decoder;
+
+    // Mutex necessary to protect access to the terminal and related things.
+    //
+    // Multi-threaded access can happen when Godot performs some action on the
+    // terminal and at the same time data is written to the master_descriptor
+    // which is then decoded in handle_bytes.
+    //
+    // This is not necessary to write/read to the master_descriptor since the
+    // kernel guarantees these operations are atomic.
+    std::mutex terminal_mutex;
+
+    // -1 so that the first reported mouse position is seen as different.
+    int previous_x = -1;
+    int previous_y = -1;
+    terminal_mouse_button held_button = terminal_mouse_button::none;
 
     terminal_program(gd100::terminal t, int md, godot_object* i)
         : terminal{std::move(t)}
@@ -221,6 +283,8 @@ public:
 
     void handle_bytes(char* bytes, std::size_t count, bool more_data_coming) override
     {
+        auto lock = std::scoped_lock{terminal_mutex};
+
         gd100::terminal_instructee t{&terminal};
         decoder.decode(bytes, count, t);
 
@@ -252,6 +316,86 @@ public:
         std::string u8str = converter.to_bytes(code);
         write(master_descriptor, u8str.c_str(), u8str.size());
     }
+
+    void process_mouse(
+            int const mouse_x,
+            int const mouse_y,
+            terminal_mouse_button const button,
+            bool const pressed_arg)
+    {
+        // pressed_arg only makes sense when this is a button event.
+        // Some buttons can't be held so they should always be considered pressed.
+
+        // pressed and released will both be false if button is none,
+        // if button is not none then only one of them will be true.
+        bool const pressed = button != terminal_mouse_button::none
+                             && (pressed_arg || !can_be_held(button));
+
+        bool const released = button != terminal_mouse_button::none && !pressed;
+
+        gd100::mouse_mode mode;
+        bool is_sgr;
+
+        {
+            auto lock = std::scoped_lock{terminal_mutex};
+            mode = terminal.mouse;
+            is_sgr = terminal.mode.is_set(gd100::terminal_mode_bit::extended_mouse);
+        }
+
+        if (mode == gd100::mouse_mode::none) return;
+        if (mode == gd100::mouse_mode::x10 && !pressed) return;
+        if (mode == gd100::mouse_mode::button && !pressed && !released) return;
+
+        int button_code;
+
+        if (button == terminal_mouse_button::none) { // Motion event
+            // Mouse didn't move to different glyhph
+            if (mouse_x == previous_x && mouse_y == previous_y)
+                return;
+
+            // Motion mode only receives info when a button is held
+            if (mode == gd100::mouse_mode::motion
+                && held_button == terminal_mouse_button::none)
+                return;
+
+            if (held_button == terminal_mouse_button::none)
+                button_code = 32 + 3;
+            else
+                button_code = 32 + static_cast<int>(held_button) - 1;
+        } else { // Button event
+            if (can_be_held(button)) {
+                if (pressed)
+                    held_button = button;
+                else
+                    held_button = terminal_mouse_button::none;
+            }
+
+            button_code = static_cast<int>(button) - 1;
+            if (button_code >= 3)
+                button_code += 64 - 3;
+        }
+
+        previous_x = mouse_x;
+        previous_y = mouse_y;
+
+        if (!is_sgr) {
+            char mouse_data[6]{'\x1b', '[', 'M', /* button, mouse_x, mouse_y */};
+
+            mouse_data[4] = 32 + mouse_x + 1;
+            mouse_data[5] = 32 + mouse_y + 1;
+            mouse_data[3] = 32 + (released ? 3 : button_code);
+
+            write(master_descriptor, mouse_data, sizeof(mouse_data));
+        } else {
+            char sgr_buffer[64]{};
+            auto const message_length =
+                std::snprintf(sgr_buffer, sizeof(sgr_buffer),
+                              "\x1b[<%d;%d;%d%c",
+                              button_code, mouse_x + 1, mouse_y + 1,
+                              released ? 'm' : 'M');
+            write(master_descriptor, sgr_buffer, message_length);
+        }
+    }
 };
 
 godot_variant send_code_method(
@@ -271,6 +415,34 @@ godot_variant send_code_method(
 
     auto term = reinterpret_cast<terminal_program*>(user_data);
     term->send_code(code);
+
+    godot_variant ret;
+    api->godot_variant_new_nil(&ret);
+    return ret;
+}
+
+godot_variant send_mouse_method(
+        godot_object *obj,
+        void *method_data,
+        void *user_data,
+        int num_args,
+        godot_variant **args)
+{
+    if (num_args != 4) {
+        godot_variant ret;
+        api->godot_variant_new_nil(&ret);
+        return ret;
+    }
+
+    auto const mouse_x = api->godot_variant_as_int(args[0]);
+    auto const mouse_y = api->godot_variant_as_int(args[1]);
+    auto const button_nr = api->godot_variant_as_int(args[2]);
+    auto const godot_button = static_cast<godot_mouse_button>(button_nr);
+    auto const button = to_terminal_mouse(godot_button);
+    auto const pressed = api->godot_variant_as_bool(args[3]);
+
+    auto term = reinterpret_cast<terminal_program*>(user_data);
+    term->process_mouse(mouse_x, mouse_y, button, pressed);
 
     godot_variant ret;
     api->godot_variant_new_nil(&ret);
@@ -451,7 +623,7 @@ void GDTERM_EXPORT godot_nativescript_init(void* desc)
         GODOT_METHOD_RPC_MODE_DISABLED
     };
 
-    auto method = godot_instance_method{
+    auto sc_method = godot_instance_method{
         send_code_method,
         nullptr, nullptr,
     };
@@ -461,7 +633,19 @@ void GDTERM_EXPORT godot_nativescript_init(void* desc)
         "TerminalLogic",
         "send_code",
         attr,
-        method);
+        sc_method);
+
+    auto sm_method = godot_instance_method{
+        send_mouse_method,
+        nullptr, nullptr,
+    };
+
+    nativescript_api->godot_nativescript_register_method(
+        desc,
+        "TerminalLogic",
+        "send_mouse",
+        attr,
+        sm_method);
 }
 
 }
