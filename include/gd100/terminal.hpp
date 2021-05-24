@@ -39,7 +39,7 @@ public:
     void write_char(code_point ch);
     void move_cursor(position pos);
     void move_cursor_forward(int width);
-    void set_char(code_point ch, glyph_style style, position pos);
+    void set_char(code_point ch, int width, glyph_style style, position pos);
     glyph* glyph_at_cursor();
     void mark_dirty(int line);
     void mark_dirty(int line_beg, int line_end);

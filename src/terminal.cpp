@@ -56,7 +56,7 @@ void terminal::write_char(code_point ch)
         gl = glyph_at_cursor();
     }
 
-    set_char(ch, cursor.style, cursor.pos);
+    set_char(ch, width, cursor.style, cursor.pos);
 
     if (width == 2) {
         gl[0].style.mode.set(glyph_attr_bit::wide);
@@ -85,8 +85,14 @@ void terminal::move_cursor_forward(int width)
     move_cursor(new_pos);
 }
 
-void terminal::set_char(code_point ch, glyph_style style, position pos)
+void terminal::set_char(
+        code_point ch,
+        int const width,
+        glyph_style style,
+        position pos)
 {
+    pos = clamp_pos(pos);
+
     // The table is proudly stolen from st from rxvt.
     static char32_t vt100_0[] = {
         U'↑', U'↓', U'→', U'←', U'█', U'▚', U'☃',
@@ -107,7 +113,16 @@ void terminal::set_char(code_point ch, glyph_style style, position pos)
 
     mark_dirty(pos.y);
     screen.get_glyph(pos) = {style, ch};
-    // TODO: implement wide character overwriting properly.
+
+    if (width == 2) {
+        screen.get_glyph(pos).style.mode.set(glyph_attr_bit::wide);
+
+        if (pos.x + 1 < screen.size().width) {
+            auto const dummy_pos = position{pos.x + 1, pos.y};
+            screen.get_glyph(dummy_pos) = {style, '\0'};
+            screen.get_glyph(dummy_pos).style.mode = glyph_attr_bit::wdummy;
+        }
+    }
 }
 
 glyph* terminal::glyph_at_cursor()
