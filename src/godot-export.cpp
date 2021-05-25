@@ -77,8 +77,8 @@ godot_variant bg_key;
 
 godot_variant get_glyph(gd100::terminal const* const term, int const row, int const column)
 {
-    godot_dictionary glyph_dict;
-    api->godot_dictionary_new(&glyph_dict);
+    godot_array glyph_data;
+    api->godot_array_new(&glyph_data);
 
     auto glyph = term->screen.get_glyph({column, row});
 
@@ -103,8 +103,8 @@ godot_variant get_glyph(gd100::terminal const* const term, int const row, int co
     if (glyph.style.mode.is_set(gd100::glyph_attr_bit::reversed))
         std::swap(fg, bg);
 
-    api->godot_dictionary_set(&glyph_dict, &fg_key, &fg);
-    api->godot_dictionary_set(&glyph_dict, &bg_key, &bg);
+    api->godot_array_push_back(&glyph_data, &fg);
+    api->godot_array_push_back(&glyph_data, &bg);
 
     api->godot_variant_destroy(&bg);
     api->godot_variant_destroy(&fg);
@@ -112,12 +112,12 @@ godot_variant get_glyph(gd100::terminal const* const term, int const row, int co
     godot_variant code_point;
     api->godot_variant_new_int(&code_point, glyph.code);
 
-    api->godot_dictionary_set(&glyph_dict, &code_point_key, &code_point);
+    api->godot_array_push_back(&glyph_data, &code_point);
     api->godot_variant_destroy(&code_point);
 
     godot_variant ret;
-    api->godot_variant_new_dictionary(&ret, &glyph_dict);
-    api->godot_dictionary_destroy(&glyph_dict);
+    api->godot_variant_new_array(&ret, &glyph_data);
+    api->godot_array_destroy(&glyph_data);
 
     return ret;
 }
