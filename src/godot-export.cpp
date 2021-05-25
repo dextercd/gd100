@@ -490,8 +490,10 @@ terminal_program* start_program(godot_object* const instance)
         dup2(slavefd, 1);
         dup2(slavefd, 2);
 
+        char command[] = "sh";
+
         char* const args[]{
-            "sh",
+            command,
             nullptr,
         };
 
