@@ -71,10 +71,6 @@ godot_variant_call_error object_emit_signal_deferred(
     return error;
 }
 
-godot_variant code_point_key;
-godot_variant fg_key;
-godot_variant bg_key;
-
 godot_variant get_glyph(gd100::terminal const* const term, int const row, int const column)
 {
     godot_array glyph_data;
@@ -575,29 +571,10 @@ void GDTERM_EXPORT godot_gdnative_init(godot_gdnative_init_options* options)
     api->godot_string_new_with_wide_string(&cursor_key_string, L"cursor", 6);
     api->godot_variant_new_string(&cursor_key, &cursor_key_string);
     api->godot_string_destroy(&cursor_key_string);
-
-    godot_string code_point_key_string;
-    api->godot_string_new_with_wide_string(&code_point_key_string, L"code", 4);
-    api->godot_variant_new_string(&code_point_key, &code_point_key_string);
-    api->godot_string_destroy(&code_point_key_string);
-
-    godot_string fg_key_string;
-    api->godot_string_new_with_wide_string(&fg_key_string, L"fg", 2);
-    api->godot_variant_new_string(&fg_key, &fg_key_string);
-    api->godot_string_destroy(&fg_key_string);
-
-    godot_string bg_key_string;
-    api->godot_string_new_with_wide_string(&bg_key_string, L"bg", 2);
-    api->godot_variant_new_string(&bg_key, &bg_key_string);
-    api->godot_string_destroy(&bg_key_string);
 }
 
 void GDTERM_EXPORT godot_gdnative_terminate(godot_gdnative_terminate_options* options)
 {
-    api->godot_variant_destroy(&bg_key);
-    api->godot_variant_destroy(&fg_key);
-    api->godot_variant_destroy(&code_point_key);
-
     api->godot_variant_destroy(&cursor_key);
     api->godot_variant_destroy(&lines_key);
 }
