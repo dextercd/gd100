@@ -7,6 +7,7 @@
 #include <utility>
 #include <mutex>
 #include <cstdio>
+#include <chrono>
 
 #include <gdnative_api_struct.gen.h>
 
@@ -247,6 +248,20 @@ bool can_be_held(terminal_mouse_button m)
     }
 }
 
+template<class F>
+auto time_call(char const* const label, const F& f)
+{
+    auto const before = std::chrono::steady_clock::now();
+    auto const ret = f();
+    auto const after = std::chrono::steady_clock::now();
+
+    auto const diff = std::chrono::duration<double, std::milli>{after - before};
+
+    std::cout << diff.count() << " ms :: " << label << '\n';
+
+    return ret;
+}
+
 class terminal_program : public gd100::program {
 public:
     gd100::terminal terminal;
@@ -286,10 +301,10 @@ public:
         auto lock = std::scoped_lock{terminal_mutex};
 
         gd100::terminal_instructee t{&terminal};
-        decoder.decode(bytes, count, t);
+        time_call("decode", [&] { decoder.decode(bytes, count, t); return 0; });
 
         if (!more_data_coming) {
-            auto data = get_terminal_data(&terminal);
+            auto data = time_call("serialize-term", [&] { return get_terminal_data(&terminal); });
             const auto* args = &data;
             object_emit_signal_deferred(
                 instance,
