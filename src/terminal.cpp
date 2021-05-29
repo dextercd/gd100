@@ -7,6 +7,8 @@
 
 namespace gd100 {
 
+static_assert(std::is_copy_assignable_v<terminal>);
+
 charset terminal::current_charset() const
 {
     return translation_tables[using_translation_table];

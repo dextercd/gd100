@@ -1,15 +1,19 @@
+#include <type_traits>
+
 #include <gd100/terminal_screen.hpp>
 
 namespace gd100 {
 
+static_assert(std::is_copy_assignable_v<terminal_screen>);
+
 terminal_screen::terminal_screen(extend screen_sz)
     : m_size{screen_sz}
-    , data{new glyph[m_size.width * m_size.height]{}}
+    , data(m_size.width * m_size.height, glyph{})
 {
     lines.resize(m_size.height);
     int index = 0;
     for(auto& line : lines) {
-        line = data.get() + index * m_size.width;
+        line = data.data() + index * m_size.width;
         ++index;
     }
 }
