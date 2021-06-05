@@ -71,11 +71,12 @@ godot_variant_call_error object_emit_signal_deferred(
     return error;
 }
 
-godot_variant get_glyph(gd100::terminal const* const term, int const row, int const column)
+void get_glyph(
+        gd100::terminal const* const term,
+        int const row,
+        int const column,
+        godot_array& line_arr)
 {
-    godot_array glyph_data;
-    api->godot_array_new(&glyph_data);
-
     auto glyph = term->screen.get_glyph({column, row});
 
     godot_color fg_col;
@@ -99,8 +100,8 @@ godot_variant get_glyph(gd100::terminal const* const term, int const row, int co
     if (glyph.style.mode.is_set(gd100::glyph_attr_bit::reversed))
         std::swap(fg, bg);
 
-    api->godot_array_push_back(&glyph_data, &fg);
-    api->godot_array_push_back(&glyph_data, &bg);
+    api->godot_array_set(&line_arr, column * 3 + 0, &fg);
+    api->godot_array_set(&line_arr, column * 3 + 1, &bg);
 
     api->godot_variant_destroy(&bg);
     api->godot_variant_destroy(&fg);
@@ -108,32 +109,25 @@ godot_variant get_glyph(gd100::terminal const* const term, int const row, int co
     godot_variant code_point;
     api->godot_variant_new_int(&code_point, glyph.code);
 
-    api->godot_array_push_back(&glyph_data, &code_point);
+    api->godot_array_set(&line_arr, column * 3 + 2, &code_point);
     api->godot_variant_destroy(&code_point);
-
-    godot_variant ret;
-    api->godot_variant_new_array(&ret, &glyph_data);
-    api->godot_array_destroy(&glyph_data);
-
-    return ret;
 }
 
 godot_variant get_line(gd100::terminal const* const term, int const line)
 {
-    godot_array linearr;
-    api->godot_array_new(&linearr);
-
     auto const width = term->screen.size().width;
 
+    godot_array line_arr;
+    api->godot_array_new(&line_arr);
+    api->godot_array_resize(&line_arr, width * 3);
+
     for(int col = 0; col != width; ++col) {
-        auto glyph = get_glyph(term, line, col);
-        api->godot_array_push_back(&linearr, &glyph);
-        api->godot_variant_destroy(&glyph);
+        get_glyph(term, line, col, line_arr);
     }
 
     godot_variant ret;
-    api->godot_variant_new_array(&ret, &linearr);
-    api->godot_array_destroy(&linearr);
+    api->godot_variant_new_array(&ret, &line_arr);
+    api->godot_array_destroy(&line_arr);
 
     return ret;
 }
