@@ -488,7 +488,7 @@ terminal_program* start_program(godot_object* const instance)
         };
 
         setenv("TERM", "gdterm", 1);
-        execvp("sh", args);
+        execvp(command, args);
     }
 
     if (fork_result == -1) {
