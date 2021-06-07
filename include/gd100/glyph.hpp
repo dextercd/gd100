@@ -26,6 +26,17 @@ struct colour {
     std::uint8_t b;
 };
 
+inline std::uint32_t to_u32(colour c)
+{
+    auto result = std::uint32_t{};
+    result |= static_cast<std::uint32_t>(c.r)  << 24;
+    result |= static_cast<std::uint32_t>(c.g)  << 16;
+    result |= static_cast<std::uint32_t>(c.b)  << 8;
+    result |= static_cast<std::uint32_t>(0xff) << 0;
+
+    return result;
+}
+
 using code_point = std::uint32_t;
 
 struct extend {
