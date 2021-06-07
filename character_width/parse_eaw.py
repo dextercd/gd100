@@ -8,10 +8,10 @@ import parse_util
 # <codepoint>;<width-category>
 # <codepoint>..<codepoint>;<width-category>
 #
-# 0000..001F;N
 # 0020;Na
+# 0000..001F;N
 
-# The codepoints listed in the file are in ascending order
+# The codepoints in the file are in ascending order
 
 
 def parse(file_name):

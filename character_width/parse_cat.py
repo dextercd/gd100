@@ -8,10 +8,12 @@ import parse_util
 # <codepoint>;<general-category>
 # <codepoint>..<codepoint>;<general-category>
 #
-# 0380..0383    ; Cn
 # 038B          ; Cn
+# 0380..0383    ; Cn
 
-# The codepoints are partitioned by category, NOT in ascending order
+# The codepoints are partitioned by category,
+# then in ascending order.
+# So we need to sort the ranges before adding to the range list.
 
 
 def parse(file_name):
