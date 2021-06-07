@@ -108,10 +108,16 @@ void program_terminal_manager::controller_loop()
                 // input is expected.  This way the processor can wait before
                 // displaying the data or doing some other expensive operation.
                 auto has_input = true;
-                for (int i = 0; has_input && i != 100; ++i) {
+                for (int i = 0; has_input && i != 10; ++i) {
                     auto const read_count = read(event.data.fd, read_buffer.get(), read_buffer_size);
                     if (read_count == -1)
                         break;
+
+                    if (i == 0) {
+                        // There's a large likelyhood we'll get more input,
+                        // so we sleep for a little bit before doing the 'more input' check.
+                        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+                    }
 
                     pollfd poll_has_input;
                     poll_has_input.fd = event.data.fd;
