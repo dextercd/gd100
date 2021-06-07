@@ -457,6 +457,8 @@ terminal_program* start_program(godot_object* const instance)
         dup2(slavefd, 1);
         dup2(slavefd, 2);
 
+        setenv("TERM", "gdterm", 1);
+
         char command[] = "sh";
 
         char* const args[]{
@@ -464,7 +466,6 @@ terminal_program* start_program(godot_object* const instance)
             nullptr,
         };
 
-        setenv("TERM", "gdterm", 1);
         execvp(command, args);
     }
 
