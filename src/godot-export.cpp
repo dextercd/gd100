@@ -115,6 +115,9 @@ godot_variant get_lines(gd100::terminal const* const term)
     api->godot_dictionary_new(&line_dict);
 
     for (int line = 0; line != term->screen.size().height; ++line) {
+        auto const& termline = term->screen.lines[line];
+        if (!termline.changed)
+            continue;
 
         godot_variant line_number;
         api->godot_variant_new_int(&line_number, line);
@@ -147,6 +150,7 @@ godot_variant get_cursor(gd100::terminal const* const term)
 
 godot_variant lines_key;
 godot_variant cursor_key;
+godot_variant scroll_change_key;
 
 godot_variant get_terminal_data(const gd100::terminal* const term)
 {
@@ -162,6 +166,12 @@ godot_variant get_terminal_data(const gd100::terminal* const term)
 
     api->godot_dictionary_set(&term_dict, &cursor_key, &cursor_data);
     api->godot_variant_destroy(&cursor_data);
+
+    godot_variant scroll_change;
+    api->godot_variant_new_int(&scroll_change, term->screen.changed_scroll());
+
+    api->godot_dictionary_set(&term_dict, &scroll_change_key, &scroll_change);
+    api->godot_variant_destroy(&scroll_change);
 
     godot_variant ret;
     api->godot_variant_new_dictionary(&ret, &term_dict);
@@ -272,6 +282,7 @@ public:
 
         if (!more_data_coming) {
             auto data = time_call("serialize-term", [&] { return get_terminal_data(&terminal); });
+            terminal.screen.clear_changes();
             const auto* args = &data;
             object_emit_signal_deferred(
                 instance,
@@ -543,12 +554,18 @@ void GDTERM_EXPORT godot_gdnative_init(godot_gdnative_init_options* options)
     api->godot_string_new_with_wide_string(&cursor_key_string, L"cursor", 6);
     api->godot_variant_new_string(&cursor_key, &cursor_key_string);
     api->godot_string_destroy(&cursor_key_string);
+
+    godot_string scroll_change_key_string;
+    api->godot_string_new_with_wide_string(&scroll_change_key_string, L"scroll_change", 13);
+    api->godot_variant_new_string(&scroll_change_key, &scroll_change_key_string);
+    api->godot_string_destroy(&scroll_change_key_string);
 }
 
 void GDTERM_EXPORT godot_gdnative_terminate(godot_gdnative_terminate_options* options)
 {
     api->godot_variant_destroy(&cursor_key);
     api->godot_variant_destroy(&lines_key);
+    api->godot_variant_destroy(&scroll_change_key);
 }
 
 void GDTERM_EXPORT godot_nativescript_init(void* desc)

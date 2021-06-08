@@ -8,13 +8,19 @@
 
 namespace gd100 {
 
+struct line {
+    glyph* glyphs;
+    bool changed;
+};
+
 class terminal_screen {
 private:
     extend m_size;
+    int m_scroll = 0;
 
 public:
     std::vector<glyph> data;
-    std::vector<glyph*> lines;
+    std::vector<line> lines;
 
     terminal_screen()
         : terminal_screen({80, 25})
@@ -30,6 +36,16 @@ public:
     glyph const& get_glyph(position pos) const;
 
     extend size() const;
+    void mark_dirty(int start, int end);
+
+    // Retrieve how much the scrolling has changed +/-
+    int changed_scroll() const;
+
+    void clear_changes();
+    void move_scroll(int change);
+
+private:
+    void set_scroll(int scroll);
 };
 
 } // gd100::
