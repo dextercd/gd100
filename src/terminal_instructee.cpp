@@ -93,7 +93,7 @@ void terminal_instructee::change_mode_bits(bool set, terminal_mode mode)
     }
 }
 
-void terminal_instructee::move_cursor(int count, direction dir)
+void terminal_instructee::move_cursor(int count, direction dir, bool first_col)
 {
     switch(dir) {
         case direction::up:
@@ -113,6 +113,9 @@ void terminal_instructee::move_cursor(int count, direction dir)
                 {term->cursor.pos.x - count, term->cursor.pos.y});
             break;
     }
+
+    if (first_col)
+        term->move_cursor({0, term->cursor.pos.y});
 }
 
 void terminal_instructee::move_to_column(int column)

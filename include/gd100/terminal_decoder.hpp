@@ -28,7 +28,7 @@ public:
     virtual void clear_line() = 0;
     virtual void position_cursor(position pos) = 0;
     virtual void change_mode_bits(bool set, terminal_mode mode) = 0;
-    virtual void move_cursor(int count, direction dir) = 0;
+    virtual void move_cursor(int count, direction dir, bool first_col=false) = 0;
     virtual void move_to_column(int column) = 0;
     virtual void move_to_row(int row) = 0;
     virtual void delete_chars(int count) = 0;

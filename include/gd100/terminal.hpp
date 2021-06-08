@@ -78,7 +78,7 @@ struct terminal_instructee : decoder_instructee {
     void clear_line() override;
     void position_cursor(position pos) override;
     void change_mode_bits(bool set, terminal_mode mode) override;
-    void move_cursor(int count, direction dir) override;
+    void move_cursor(int count, direction dir, bool first_col) override;
     void move_to_column(int column) override;
     void move_to_row(int row) override;
     void delete_chars(int count) override;

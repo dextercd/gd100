@@ -445,6 +445,14 @@ decode_session_ret decode_csi_pub(
             t.move_cursor(get_number(0, 1), direction::back);
             break;
 
+        case 'E':
+            t.move_cursor(get_number(0, 1), direction::down, true);
+            break;
+
+        case 'F':
+            t.move_cursor(get_number(0, 1), direction::up, true);
+            break;
+
         case 'P':
             t.delete_chars(get_number(0, 1));
             break;
