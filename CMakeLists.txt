@@ -7,27 +7,49 @@ enable_testing()
 
 add_subdirectory(character_width)
 
-add_library(terminal STATIC
-    src/terminal.cpp
-    src/terminal_screen.cpp
-    src/position.cpp
-    src/terminal_decoder.cpp
-    src/terminal_instructee.cpp)
 
-target_include_directories(terminal
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+# terminal-interface
 
-set_target_properties(terminal PROPERTIES
+add_library(terminal-interface INTERFACE)
+
+target_sources(terminal-interface
+    INTERFACE
+        src/terminal.cpp
+        src/terminal_screen.cpp
+        src/position.cpp
+        src/terminal_decoder.cpp
+        src/terminal_instructee.cpp)
+
+target_include_directories(terminal-interface
+    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+set_target_properties(terminal-interface PROPERTIES
     CXX_EXTENSIONS OFF
-    POSITION_INDEPENDENT_CODE ON # Needed to link into shared library
 )
 
-target_compile_features(terminal
-    PUBLIC cxx_std_17)
+target_compile_features(terminal-interface
+    INTERFACE cxx_std_17)
 
-target_link_libraries(terminal
-    PUBLIC character_width)
+target_link_libraries(terminal-interface
+    INTERFACE character_width)
 
+
+# terminal-static
+
+add_library(terminal-static STATIC
+    $<TARGET_PROPERTY:terminal-interface,INTERFACE_SOURCES>)
+
+target_include_directories(terminal-static
+    PUBLIC $<TARGET_PROPERTY:terminal-interface,INTERFACE_INCLUDE_DIRECTORIES>)
+
+target_compile_features(terminal-static
+    PUBLIC $<TARGET_PROPERTY:terminal-interface,INTERFACE_COMPILE_FEATURES>)
+
+target_link_libraries(terminal-static
+    INTERFACE $<TARGET_PROPERTY:terminal-interface,INTERFACE_LINK_LIBRARIES>)
+
+
+# godot-terminal
 
 add_library(godot-terminal MODULE
     src/godot-export.cpp
@@ -50,7 +72,7 @@ target_compile_features(godot-terminal
     PRIVATE cxx_std_17)
 
 target_link_libraries(godot-terminal
-    PRIVATE terminal)
+    PRIVATE terminal-interface)
 
 
 add_subdirectory(extern/Catch2)

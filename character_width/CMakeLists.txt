@@ -33,11 +33,14 @@ add_custom_command(
         ${CMAKE_CURRENT_BINARY_DIR}/DerivedGeneralCategory.txt
 )
 
-add_library(character_width
-    ${CMAKE_CURRENT_BINARY_DIR}/double_width_table.inc
-    ${CMAKE_CURRENT_BINARY_DIR}/zero_width_table.inc
-    src/character_width.cpp)
+add_library(character_width INTERFACE)
+
+target_sources(character_width
+    INTERFACE
+        ${CMAKE_CURRENT_BINARY_DIR}/double_width_table.inc
+        ${CMAKE_CURRENT_BINARY_DIR}/zero_width_table.inc
+        src/character_width.cpp)
 
 target_include_directories(character_width
-    PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
-    PUBLIC include)
+    INTERFACE ${CMAKE_CURRENT_BINARY_DIR}
+    INTERFACE include)

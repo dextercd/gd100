@@ -6,6 +6,6 @@ add_executable(test_runner
 
 target_link_libraries(test_runner
     PRIVATE Catch2::Catch2
-    PRIVATE terminal)
+    PRIVATE terminal-static)
 
 add_test(NAME test_runner COMMAND test_runner)
