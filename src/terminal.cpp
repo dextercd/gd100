@@ -21,7 +21,7 @@ void terminal::tab()
     move_cursor({new_x, cursor.pos.y});
 }
 
-void terminal::newline(bool first_column)
+void terminal::newline(bool const first_column)
 {
     if (cursor.pos.y + 1 < screen.size().height) {
         cursor.pos.y++;
@@ -33,9 +33,9 @@ void terminal::newline(bool first_column)
         cursor.pos.x = 0;
 }
 
-void terminal::write_char(code_point ch)
+void terminal::write_char(code_point const ch)
 {
-    auto width{cw::character_width(ch)};
+    auto const width{cw::character_width(ch)};
     if (width == -1)
         return;
 
@@ -74,23 +74,21 @@ void terminal::write_char(code_point ch)
     }
 }
 
-void terminal::move_cursor(position pos)
+void terminal::move_cursor(position const pos)
 {
     cursor.pos = clamp_pos(pos);
     cursor.state.unset(cursor_state_bit::wrap_next);
 }
 
-void terminal::move_cursor_forward(int width)
+void terminal::move_cursor_forward(int const width)
 {
-    auto new_pos = cursor.pos;
-    new_pos.x += width;
-    move_cursor(new_pos);
+    move_cursor({cursor.pos.x + width, cursor.pos.y});
 }
 
 void terminal::set_char(
         code_point ch,
         int const width,
-        glyph_style style,
+        glyph_style const style,
         position pos)
 {
     pos = clamp_pos(pos);
@@ -132,12 +130,12 @@ glyph* terminal::glyph_at_cursor()
     return &screen.get_glyph(cursor.pos);
 }
 
-void terminal::mark_dirty(int line)
+void terminal::mark_dirty(int const line)
 {
     mark_dirty(line, line + 1);
 }
 
-void terminal::mark_dirty(int line_beg, int line_end)
+void terminal::mark_dirty(int const line_beg, int const line_end)
 {
     screen.mark_dirty(line_beg, line_end);
 }
@@ -165,13 +163,13 @@ void terminal::scroll_up(int keep_top, int const count)
     }
 }
 
-void terminal::scroll_down(int keep_top, int count)
+void terminal::scroll_down(int keep_top, int const count)
 {
     auto const height = screen.size().height;
 
     keep_top = std::clamp(keep_top, 0, height);
-    int move_end = height;
-    int move_to = std::clamp(move_end - count, 0, height);
+    auto const move_end = height;
+    auto const move_to = std::clamp(move_end - count, 0, height);
 
     std::rotate(
         screen.lines.begin() + keep_top,
@@ -237,7 +235,7 @@ void terminal::clear(position start, position end)
 
 void terminal::delete_chars(int count)
 {
-    auto cursor_to_end = screen.size().width - cursor.pos.x;
+    auto const cursor_to_end = screen.size().width - cursor.pos.x;
     std::move(
         screen.get_line(cursor.pos.y) + cursor.pos.x + std::min(cursor_to_end, count),
         screen.get_line(cursor.pos.y) + screen.size().width,
@@ -265,7 +263,7 @@ void terminal::insert_blanks(int count)
     clear(cursor.pos, {cursor.pos.x + count - 1, cursor.pos.y});
 }
 
-void terminal::insert_newline(int count)
+void terminal::insert_newline(int const count)
 {
     scroll_down(cursor.pos.y, count);
 }
@@ -274,8 +272,8 @@ void terminal::dump()
 {
     for (int y = 0; y < screen.size().height; ++y) {
         for (int x = 0; x < screen.size().width; ++x) {
-            auto pos = position{x, y};
-            auto code = screen.get_glyph(pos).code;
+            auto const pos = position{x, y};
+            auto const code = screen.get_glyph(pos).code;
             if (code != 0) {
                 std::cout << (char)code;
             } else if (cursor.pos == pos) {
@@ -290,7 +288,7 @@ void terminal::dump()
 
 position terminal::clamp_pos(position p)
 {
-    auto sz = screen.size();
+    auto const sz = screen.size();
 
     p.x = p.x < 0         ? 0
         : p.x >= sz.width ? sz.width - 1
