@@ -4,6 +4,12 @@ if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/EastAsianWidth.txt)
         ${CMAKE_CURRENT_BINARY_DIR}/EastAsianWidth.txt)
 endif()
 
+if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/DerivedGeneralCategory.txt)
+    file(DOWNLOAD
+        https://www.unicode.org/Public/UCD/latest/ucd/extracted/DerivedGeneralCategory.txt
+        ${CMAKE_CURRENT_BINARY_DIR}/DerivedGeneralCategory.txt)
+endif()
+
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/double_width_table.inc
     COMMAND
@@ -15,12 +21,6 @@ add_custom_command(
         ${CMAKE_CURRENT_BINARY_DIR}/EastAsianWidth.txt
 )
 
-
-if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/DerivedGeneralCategory.txt)
-    file(DOWNLOAD
-        https://www.unicode.org/Public/UCD/latest/ucd/extracted/DerivedGeneralCategory.txt
-        ${CMAKE_CURRENT_BINARY_DIR}/DerivedGeneralCategory.txt)
-endif()
 
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/zero_width_table.inc
