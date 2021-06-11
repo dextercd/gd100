@@ -310,30 +310,34 @@ decode_session_ret decode_csi(COMMON_PARAMS)
                     first);
         }
 
-        char read_buffer[] {
-            first        , peek(ARGS, 0),
-            peek(ARGS, 1), peek(ARGS, 2),
-            peek(ARGS, 3), peek(ARGS, 4),
-        };
+        if (first >= '0' && first <= '9') {
+            char read_buffer[] {
+                first        , peek(ARGS, 0),
+                peek(ARGS, 1), peek(ARGS, 2),
+                peek(ARGS, 3), peek(ARGS, 4),
+            };
 
-        int value;
-        auto const [num_end, ec] = std::from_chars(
-                                            std::begin(read_buffer),
-                                            std::end(read_buffer),
-                                            value);
+            int value;
+            auto const [num_end, ec] = std::from_chars(
+                                                std::begin(read_buffer),
+                                                std::end(read_buffer),
+                                                value);
 
-        if (ec == std::errc::result_out_of_range) {
-            value = -1;
-        } else if (num_end == std::begin(read_buffer)) {
-            value = 0;
+            if (ec == std::errc::result_out_of_range) {
+                value = -1;
+            } else if (num_end == std::begin(read_buffer)) {
+                value = 0;
+            } else {
+                auto digits_parsed = num_end - std::begin(read_buffer);
+                index += digits_parsed - 1; // Subtract one because we already consumed first
+            }
+
+            // If we don't have enough space we just discard it
+            if (param_count < max_csi_params)
+                params[param_count++] = value;
         } else {
-            auto digits_parsed = num_end - std::begin(read_buffer);
-            index += digits_parsed - 1; // Subtract one because we already consumed first
+            // not number, so just discard it
         }
-
-        // If we don't have enough space we just discard it
-        if (param_count < max_csi_params)
-            params[param_count++] = value;
 
         switch(peek(ARGS)) {
             case ':':
