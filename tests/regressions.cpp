@@ -44,3 +44,12 @@ TEST_CASE("Double width at end of line", "[regression][write-char][unicode]") {
     };
     run(write_char_crash);
 }
+
+TEST_CASE("Graphic0 out of bounds read", "[regression][write-char][graphic0]") {
+    // Check whether the graphic0 character exists did not have the required
+    // offset applied.
+    unsigned char grahpic0_write[] = {
+      0x1b, 0x28, 0x30, 0x41
+    };
+    run(grahpic0_write);
+}

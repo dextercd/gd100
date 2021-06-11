@@ -106,7 +106,7 @@ void terminal::set_char(
     };
 
     if (current_charset() == charset::graphic0 &&
-        ch >= 0x41 && ch <= 0x7e && vt100_0[ch] != 0)
+        ch >= 0x41 && ch <= 0x7e && vt100_0[ch - 0x41] != 0)
     {
         ch = vt100_0[ch - 0x41];
     }
