@@ -78,4 +78,6 @@ target_link_libraries(godot-terminal
 add_subdirectory(extern/Catch2)
 add_subdirectory(tests)
 
+add_subdirectory(fuzzing)
+
 add_subdirectory(terminfo)
