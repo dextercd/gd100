@@ -46,16 +46,16 @@ void terminal::write_char(code_point const ch)
         gl = glyph_at_cursor();
     }
 
+    if (cursor.pos.x + width > screen.size().width) {
+        newline(true);
+        gl = glyph_at_cursor();
+    }
+
     if (mode.is_set(terminal_mode_bit::insert)) {
         std::move_backward(
             screen.get_line(cursor.pos.y) + cursor.pos.x,
             screen.get_line(cursor.pos.y) + screen.size().width - width,
             screen.get_line(cursor.pos.y) + screen.size().width);
-    }
-
-    if (cursor.pos.x + width > screen.size().width) {
-        newline(true);
-        gl = glyph_at_cursor();
     }
 
     set_char(ch, width, cursor.style, cursor.pos);

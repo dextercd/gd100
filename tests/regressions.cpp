@@ -33,3 +33,14 @@ TEST_CASE("Large scroll down", "[regression][scroll]") {
     };
     run(large_scroll_down);
 }
+
+TEST_CASE("Double width at end of line", "[regression][write-char][unicode]") {
+    // Writing a double width character at position 131 in insert mode lead to a
+    // std::move_backward call with an range where begin() > end().
+    unsigned char write_char_crash[] = {
+      0x1b, 0x5b, 0x34, 0x68, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09,
+      0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0xf0, 0x09, 0x09,
+      0x00
+    };
+    run(write_char_crash);
+}
