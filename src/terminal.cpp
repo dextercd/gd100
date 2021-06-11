@@ -169,7 +169,7 @@ void terminal::scroll_down(int keep_top, int const count)
 
     keep_top = std::clamp(keep_top, 0, height);
     auto const move_end = height;
-    auto const move_to = std::clamp(move_end - count, 0, height);
+    auto const move_to = std::clamp(move_end - count, keep_top, height);
 
     std::rotate(
         screen.lines.begin() + keep_top,
