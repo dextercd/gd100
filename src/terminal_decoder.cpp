@@ -324,7 +324,7 @@ decode_session_ret decode_csi(COMMON_PARAMS)
                                                 value);
 
             if (ec == std::errc::result_out_of_range) {
-                value = -1;
+                value = 0;
             } else if (num_end == std::begin(read_buffer)) {
                 value = 0;
             } else {
