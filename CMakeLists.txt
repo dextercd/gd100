@@ -6,6 +6,7 @@ project(godot-terminal
 enable_testing()
 
 add_subdirectory(character_width)
+add_subdirectory(godot_lite_wrapper)
 
 
 # terminal-interface
