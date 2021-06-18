@@ -91,7 +91,7 @@ gdl::variant get_line(gd100::terminal const* const term, int const line)
         get_glyph(term, line, col, line_arr);
     }
 
-    return std::move(line_arr);
+    return line_arr;
 }
 
 gdl::variant get_lines(gd100::terminal const* const term)
@@ -106,7 +106,7 @@ gdl::variant get_lines(gd100::terminal const* const term)
         line_dict.set(std::int64_t{line}, get_line(term, line));
     }
 
-    return gdl::variant{std::move(line_dict)};
+    return line_dict;
 }
 
 godot_variant get_cursor(gd100::terminal const* const term)
@@ -132,7 +132,7 @@ gdl::variant get_terminal_data(const gd100::terminal* const term)
     term_dict.set(*cursor_key, get_cursor(term));
     term_dict.set(*scroll_change_key, std::int64_t{term->screen.changed_scroll()});
 
-    return std::move(term_dict);
+    return term_dict;
 }
 
 enum class godot_mouse_button : int {
