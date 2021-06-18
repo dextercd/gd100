@@ -73,7 +73,9 @@ target_compile_features(godot-terminal
     PRIVATE cxx_std_17)
 
 target_link_libraries(godot-terminal
-    PRIVATE terminal-interface)
+    PRIVATE
+        terminal-interface
+        godot-lite-wrapper)
 
 
 add_subdirectory(extern/Catch2)

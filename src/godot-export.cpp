@@ -1,13 +1,14 @@
 #include <algorithm>
-#include <codecvt>
-#include <locale>
-#include <iostream>
-#include <thread>
-#include <string>
-#include <utility>
-#include <mutex>
-#include <cstdio>
 #include <chrono>
+#include <codecvt>
+#include <cstdio>
+#include <iostream>
+#include <locale>
+#include <mutex>
+#include <optional>
+#include <string>
+#include <thread>
+#include <utility>
 
 #include <gdnative_api_struct.gen.h>
 
@@ -22,36 +23,30 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 
+#include <gdl/api.hpp>
+#include <gdl/pool_int_array.hpp>
+#include <gdl/variant.hpp>
+#include <gdl/dictionary.hpp>
+#include <gdl/string.hpp>
+
 gd100::program_terminal_manager manager;
 
-namespace {
-
-godot_gdnative_core_api_struct const* api = nullptr;
-godot_gdnative_ext_nativescript_api_struct const* nativescript_api = nullptr;
-
-}
-
 godot_variant_call_error object_emit_signal_deferred(
-        godot_object *p_object, godot_string p_signal_name,
+        godot_object *p_object, gdl::string const& p_signal_name,
         int p_num_args, const godot_variant **p_args)
 {
     godot_variant variant;
-    api->godot_variant_new_object(&variant, p_object);
+    gdl::api->godot_variant_new_object(&variant, p_object);
 
-    godot_string method = api->godot_string_chars_to_utf8("call_deferred");
+    const godot_variant** args = (const godot_variant**)gdl::api->godot_alloc(sizeof(godot_variant *) * (p_num_args + 2));
 
-    const godot_variant** args = (const godot_variant**)api->godot_alloc(sizeof(godot_variant *) * (p_num_args + 2));
+    auto const method = gdl::string{"call_deferred"};
+    auto const method_name = gdl::variant{gdl::string{"emit_signal"}};
 
-    godot_variant variant_method_name;
-    godot_string method_name = api->godot_string_chars_to_utf8("emit_signal");
-    api->godot_variant_new_string(&variant_method_name, &method_name);
-    api->godot_string_destroy(&method_name);
+    auto const variant_signal_name = gdl::variant{p_signal_name};
 
-    godot_variant variant_signal_name;
-    api->godot_variant_new_string(&variant_signal_name, &p_signal_name);
-
-    args[0] = &variant_method_name;
-    args[1] = &variant_signal_name;
+    args[0] = method_name.get();
+    args[1] = variant_signal_name.get();
 
     for (int i = 0; i < p_num_args; i++)
     {
@@ -59,14 +54,9 @@ godot_variant_call_error object_emit_signal_deferred(
     }
 
     godot_variant_call_error error;
-    api->godot_variant_call(&variant, &method, args, p_num_args + 2, &error);
-
-    api->godot_variant_destroy(&variant_signal_name);
-    api->godot_string_destroy(&method_name);
-    api->godot_variant_destroy(&variant_method_name);
-    api->godot_free(args);
-    api->godot_string_destroy(&method);
-    api->godot_variant_destroy(&variant);
+    gdl::api->godot_variant_call(&variant, method.get(), args, p_num_args + 2, &error);
+    gdl::api->godot_free(args);
+    gdl::api->godot_variant_destroy(&variant);
 
     return error;
 }
@@ -75,9 +65,9 @@ void get_glyph(
         gd100::terminal const* const term,
         int const row,
         int const column,
-        godot_pool_int_array& line_arr)
+        gdl::pool_int_array& line_arr)
 {
-    auto glyph = term->screen.get_glyph({column, row});
+    auto const glyph = term->screen.get_glyph({column, row});
 
     auto fg = to_u32(glyph.style.fg);
     auto bg = to_u32(glyph.style.bg);
@@ -85,99 +75,64 @@ void get_glyph(
     if (glyph.style.mode.is_set(gd100::glyph_attr_bit::reversed))
         std::swap(fg, bg);
 
-    api->godot_pool_int_array_set(&line_arr, column * 3 + 0, fg);
-    api->godot_pool_int_array_set(&line_arr, column * 3 + 1, bg);
-    api->godot_pool_int_array_set(&line_arr, column * 3 + 2, glyph.code);
+    line_arr.set(column * 3 + 0, fg);
+    line_arr.set(column * 3 + 1, bg);
+    line_arr.set(column * 3 + 2, glyph.code);
 }
 
-godot_variant get_line(gd100::terminal const* const term, int const line)
+gdl::variant get_line(gd100::terminal const* const term, int const line)
 {
     auto const width = term->screen.size().width;
 
-    godot_pool_int_array line_arr;
-    api->godot_pool_int_array_new(&line_arr);
-    api->godot_pool_int_array_resize(&line_arr, width * 3);
+    gdl::pool_int_array line_arr;
+    line_arr.resize(width * 3);
 
     for(int col = 0; col != width; ++col) {
         get_glyph(term, line, col, line_arr);
     }
 
-    godot_variant ret;
-    api->godot_variant_new_pool_int_array(&ret, &line_arr);
-    api->godot_pool_int_array_destroy(&line_arr);
-
-    return ret;
+    return std::move(line_arr);
 }
 
-godot_variant get_lines(gd100::terminal const* const term)
+gdl::variant get_lines(gd100::terminal const* const term)
 {
-    godot_dictionary line_dict;
-    api->godot_dictionary_new(&line_dict);
+    gdl::dictionary line_dict;
 
     for (int line = 0; line != term->screen.size().height; ++line) {
         auto const& termline = term->screen.lines[line];
         if (!termline.changed)
             continue;
 
-        godot_variant line_number;
-        api->godot_variant_new_int(&line_number, line);
-
-        godot_variant line_data = get_line(term ,line);
-
-        api->godot_dictionary_set(&line_dict, &line_number, &line_data);
-
-        api->godot_variant_destroy(&line_number);
-        api->godot_variant_destroy(&line_data);
+        line_dict.set(std::int64_t{line}, get_line(term, line));
     }
 
-    godot_variant ret;
-    api->godot_variant_new_dictionary(&ret, &line_dict);
-    api->godot_dictionary_destroy(&line_dict);
-
-    return ret;
+    return gdl::variant{std::move(line_dict)};
 }
 
 godot_variant get_cursor(gd100::terminal const* const term)
 {
     godot_vector2 cursor_pos;
-    api->godot_vector2_new(&cursor_pos, term->cursor.pos.x, term->cursor.pos.y);
+    gdl::api->godot_vector2_new(&cursor_pos, term->cursor.pos.x, term->cursor.pos.y);
 
     godot_variant ret;
-    api->godot_variant_new_vector2(&ret, &cursor_pos);
+    gdl::api->godot_variant_new_vector2(&ret, &cursor_pos);
 
     return ret;
 }
 
-godot_variant lines_key;
-godot_variant cursor_key;
-godot_variant scroll_change_key;
+std::optional<gdl::variant> lines_key;
+std::optional<gdl::variant> cursor_key;
+std::optional<gdl::variant> scroll_change_key;
 
-godot_variant get_terminal_data(const gd100::terminal* const term)
+gdl::variant get_terminal_data(const gd100::terminal* const term)
 {
-    godot_dictionary term_dict;
-    api->godot_dictionary_new(&term_dict);
+    gdl::dictionary term_dict;
 
-    godot_variant lines_data = get_lines(term);
+    term_dict.set(*lines_key, get_lines(term));
+    term_dict.set(*cursor_key, get_cursor(term));
+    term_dict.set(*scroll_change_key, std::int64_t{term->screen.changed_scroll()});
 
-    api->godot_dictionary_set(&term_dict, &lines_key, &lines_data);
-    api->godot_variant_destroy(&lines_data);
-
-    godot_variant cursor_data = get_cursor(term);
-
-    api->godot_dictionary_set(&term_dict, &cursor_key, &cursor_data);
-    api->godot_variant_destroy(&cursor_data);
-
-    godot_variant scroll_change;
-    api->godot_variant_new_int(&scroll_change, term->screen.changed_scroll());
-
-    api->godot_dictionary_set(&term_dict, &scroll_change_key, &scroll_change);
-    api->godot_variant_destroy(&scroll_change);
-
-    godot_variant ret;
-    api->godot_variant_new_dictionary(&ret, &term_dict);
-    api->godot_dictionary_destroy(&term_dict);
-
-    return ret;
+    return std::move(term_dict);
 }
 
 enum class godot_mouse_button : int {
@@ -283,14 +238,12 @@ public:
         if (!more_data_coming) {
             auto data = time_call("serialize-term", [&] { return get_terminal_data(&terminal); });
             terminal.screen.clear_changes();
-            const auto* args = &data;
+            const auto* args = data.get();
             object_emit_signal_deferred(
                 instance,
-                api->godot_string_chars_to_utf8("terminal_updated"),
+                "terminal_updated",
                 1,
                 &args);
-
-            api->godot_variant_destroy(&data);
         }
 
 #if 0
@@ -400,17 +353,17 @@ godot_variant send_code_method(
 {
     if (num_args != 1) {
         godot_variant ret;
-        api->godot_variant_new_nil(&ret);
+        gdl::api->godot_variant_new_nil(&ret);
         return ret;
     }
 
-    auto const code = api->godot_variant_as_int(args[0]);
+    auto const code = gdl::api->godot_variant_as_int(args[0]);
 
     auto term = reinterpret_cast<terminal_program*>(user_data);
     term->send_code(code);
 
     godot_variant ret;
-    api->godot_variant_new_nil(&ret);
+    gdl::api->godot_variant_new_nil(&ret);
     return ret;
 }
 
@@ -423,22 +376,22 @@ godot_variant send_mouse_method(
 {
     if (num_args != 4) {
         godot_variant ret;
-        api->godot_variant_new_nil(&ret);
+        gdl::api->godot_variant_new_nil(&ret);
         return ret;
     }
 
-    auto const mouse_x = api->godot_variant_as_int(args[0]);
-    auto const mouse_y = api->godot_variant_as_int(args[1]);
-    auto const button_nr = api->godot_variant_as_int(args[2]);
+    auto const mouse_x = gdl::api->godot_variant_as_int(args[0]);
+    auto const mouse_y = gdl::api->godot_variant_as_int(args[1]);
+    auto const button_nr = gdl::api->godot_variant_as_int(args[2]);
     auto const godot_button = static_cast<godot_mouse_button>(button_nr);
     auto const button = to_terminal_mouse(godot_button);
-    auto const pressed = api->godot_variant_as_bool(args[3]);
+    auto const pressed = gdl::api->godot_variant_as_bool(args[3]);
 
     auto term = reinterpret_cast<terminal_program*>(user_data);
     term->process_mouse(mouse_x, mouse_y, button, pressed);
 
     godot_variant ret;
-    api->godot_variant_new_nil(&ret);
+    gdl::api->godot_variant_new_nil(&ret);
     return ret;
 }
 
@@ -519,53 +472,24 @@ void destroy_terminal(godot_object* const instance, void* const method_data, voi
     auto term = reinterpret_cast<terminal_program*>(user_data);
 }
 
-/* Looks in api->extensions for an extension that matches the argument type.
-   Returns nullptr when an extension of that type could not be found. */
-godot_gdnative_api_struct const* find_extension_of_type(unsigned const type)
-{
-    auto const extensions_begin = api->extensions;
-    auto const extensions_end = extensions_begin + api->num_extensions;
-
-    auto const ext = std::find_if(extensions_begin, extensions_end,
-                        [=](auto const extension) {
-                            return extension->type == type;
-                        });
-
-    if (ext != extensions_end)
-        return *ext;
-
-    return nullptr;
-}
-
 extern "C" {
 
 void GDTERM_EXPORT godot_gdnative_init(godot_gdnative_init_options* options)
 {
-    api = options->api_struct;
-    nativescript_api = reinterpret_cast<decltype(nativescript_api)>(
-                            find_extension_of_type(GDNATIVE_EXT_NATIVESCRIPT));
+    gdl::initialise(options);
 
-    godot_string lines_key_string;
-    api->godot_string_new_with_wide_string(&lines_key_string, L"lines", 5);
-    api->godot_variant_new_string(&lines_key, &lines_key_string);
-    api->godot_string_destroy(&lines_key_string);
-
-    godot_string cursor_key_string;
-    api->godot_string_new_with_wide_string(&cursor_key_string, L"cursor", 6);
-    api->godot_variant_new_string(&cursor_key, &cursor_key_string);
-    api->godot_string_destroy(&cursor_key_string);
-
-    godot_string scroll_change_key_string;
-    api->godot_string_new_with_wide_string(&scroll_change_key_string, L"scroll_change", 13);
-    api->godot_variant_new_string(&scroll_change_key, &scroll_change_key_string);
-    api->godot_string_destroy(&scroll_change_key_string);
+    lines_key = gdl::string{"lines"};
+    cursor_key = gdl::string{"cursor"};
+    scroll_change_key = gdl::string{"scroll_change"};
 }
 
 void GDTERM_EXPORT godot_gdnative_terminate(godot_gdnative_terminate_options* options)
 {
-    api->godot_variant_destroy(&cursor_key);
-    api->godot_variant_destroy(&lines_key);
-    api->godot_variant_destroy(&scroll_change_key);
+    scroll_change_key.reset();
+    cursor_key.reset();
+    lines_key.reset();
+
+    gdl::deinitialise();
 }
 
 void GDTERM_EXPORT godot_nativescript_init(void* desc)
@@ -573,31 +497,31 @@ void GDTERM_EXPORT godot_nativescript_init(void* desc)
     auto const create = godot_instance_create_func{create_terminal, nullptr, nullptr};
     auto const destroy = godot_instance_destroy_func{destroy_terminal, nullptr, nullptr};
 
-    nativescript_api->godot_nativescript_register_class(
+    gdl::nativescript_api->godot_nativescript_register_class(
         desc,
         "TerminalLogic",
         "Reference",
         create, destroy);
 
     godot_variant nil;
-    api->godot_variant_new_nil(&nil);
+    gdl::api->godot_variant_new_nil(&nil);
 
     auto signal_arg = godot_signal_argument{
-        api->godot_string_chars_to_utf8("data"),
+        gdl::api->godot_string_chars_to_utf8("data"),
         GODOT_VARIANT_TYPE_DICTIONARY,
         GODOT_PROPERTY_HINT_NONE,
-        api->godot_string_chars_to_utf8("hint str"),
+        gdl::api->godot_string_chars_to_utf8("hint str"),
         GODOT_PROPERTY_USAGE_DEFAULT,
         nil
     };
 
     auto const signal = godot_signal{
-        api->godot_string_chars_to_utf8("terminal_updated"),
+        gdl::api->godot_string_chars_to_utf8("terminal_updated"),
         1, &signal_arg,
         0, nullptr,
     };
 
-    nativescript_api->godot_nativescript_register_signal(
+    gdl::nativescript_api->godot_nativescript_register_signal(
         desc,
         "TerminalLogic",
         &signal);
@@ -611,7 +535,7 @@ void GDTERM_EXPORT godot_nativescript_init(void* desc)
         nullptr, nullptr,
     };
 
-    nativescript_api->godot_nativescript_register_method(
+    gdl::nativescript_api->godot_nativescript_register_method(
         desc,
         "TerminalLogic",
         "send_code",
@@ -623,7 +547,7 @@ void GDTERM_EXPORT godot_nativescript_init(void* desc)
         nullptr, nullptr,
     };
 
-    nativescript_api->godot_nativescript_register_method(
+    gdl::nativescript_api->godot_nativescript_register_method(
         desc,
         "TerminalLogic",
         "send_mouse",
