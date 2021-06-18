@@ -23,7 +23,7 @@ public:
         data |= bits.data;
     }
 
-    bool is_set(bit_container bits)
+    bool is_set(bit_container bits) const
     {
         return (data & bits.data) == bits.data;
     }
