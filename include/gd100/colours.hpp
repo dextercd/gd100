@@ -6,21 +6,21 @@
 namespace gd100 {
 
 constexpr colour sgr_colours[16]{
-    {0, 0, 0},       // black
+    {30, 30, 30},    // black
     {177, 22, 22},   // red
-    {17, 154, 18},   // green
+    {42, 160, 38},   // green
     {198, 195, 13},  // yellow
-    {12, 34, 190},    // blue
-    {117, 24, 145},  // magenta
-    {37, 106, 119},  // cyan
+    {18, 99, 170},   // blue
+    {157, 55, 168},  // magenta
+    {15, 180, 188},  // cyan
     {200, 200, 200}, // white
     {127, 127, 127}, // bright black
     {248, 24, 24},   // bright red
-    {18, 237, 18},   // bright green
+    {65, 205, 65},   // bright green
     {233, 237, 18},  // bright yellow
-    {52, 22, 247},   // bright blue
-    {207, 23, 214},  // bright magenta
-    {23, 214, 207},  // bright cyan
+    {34, 123, 201},  // bright blue
+    {177, 77, 188},  // bright magenta
+    {13, 211, 221},  // bright cyan
     {255, 255, 255}  // bright white
 };
 
