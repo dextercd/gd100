@@ -1,6 +1,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <cstdio>
+#include <chrono>
 
 #include <unistd.h>
 #include <sys/stat.h>
@@ -9,6 +10,8 @@
 #include <poll.h>
 
 #include <gd100/program_terminal_manager.hpp>
+
+using namespace std::chrono_literals;
 
 namespace gd100 {
 
@@ -104,11 +107,15 @@ void program_terminal_manager::controller_loop()
                 if (!program)
                     continue;
 
+                // As long as there's input we keep reading for ~1 frame
+                constexpr auto parse_max_duration = 16.66ms;
+                auto const parse_start = std::chrono::steady_clock::now();
+
                 // We read some input and indicate to the processor whether more
                 // input is expected.  This way the processor can wait before
                 // displaying the data or doing some other expensive operation.
                 auto has_input = true;
-                for (int i = 0; has_input && i != 10; ++i) {
+                for (int i = 0; has_input; ++i) {
                     auto const read_count = read(event.data.fd, read_buffer.get(), read_buffer_size);
                     if (read_count == -1)
                         break;
@@ -126,6 +133,10 @@ void program_terminal_manager::controller_loop()
                     has_input = pollres == 1;
 
                     program->handle_bytes(read_buffer.get(), read_count, has_input);
+
+                    auto const parse_now = std::chrono::steady_clock::now();
+                    if ((parse_now - parse_start) > parse_max_duration)
+                        break;
                 }
 
                 // Even though more data is in the file descriptor we're not
