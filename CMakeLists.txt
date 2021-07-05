@@ -45,7 +45,7 @@ target_compile_features(terminal-static
     PUBLIC $<TARGET_PROPERTY:terminal-interface,INTERFACE_COMPILE_FEATURES>)
 
 target_link_libraries(terminal-static
-    INTERFACE $<TARGET_PROPERTY:terminal-interface,INTERFACE_LINK_LIBRARIES>)
+    PUBLIC $<TARGET_PROPERTY:terminal-interface,INTERFACE_LINK_LIBRARIES>)
 
 add_subdirectory(terminfo)
 
