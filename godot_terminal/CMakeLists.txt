@@ -8,7 +8,7 @@ generate_export_header(godot-terminal
 
 target_include_directories(godot-terminal
     PRIVATE ${CMAKE_SOURCE_DIR}/extern/godot-headers/
-    PRIVATE ${CMAKE_BINARY_DIR})
+    PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 set_target_properties(godot-terminal PROPERTIES
     CXX_EXTENSIONS OFF
