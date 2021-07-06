@@ -16,7 +16,7 @@ enum class direction {
 class decoder_instructee {
 public:
     virtual void tab() = 0;
-    virtual void line_feed() = 0;
+    virtual void line_feed(bool first_col) = 0;
     virtual void carriage_return() = 0;
     virtual void backspace() = 0;
     virtual void write_char(code_point code) = 0;

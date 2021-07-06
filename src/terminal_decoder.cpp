@@ -139,7 +139,7 @@ decode_session_ret decode_one(COMMON_PARAMS)
         case '\f':
         case '\v':
         case '\n':
-            t.line_feed();
+            t.line_feed(false);
             RETURN_SUCCESS;
 
         case '\r':
@@ -156,6 +156,10 @@ decode_session_ret decode_one(COMMON_PARAMS)
         case '\016': /* SO (LS1 -- Locking shift 1) */
         case '\017': /* SI (LS0 -- Locking shift 0) */
             t.use_charset_table(first - '\016');
+            RETURN_SUCCESS;
+
+        case 0x85:
+            t.line_feed(true);
             RETURN_SUCCESS;
 
         case esc:

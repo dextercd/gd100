@@ -66,7 +66,7 @@ struct terminal_instructee : decoder_instructee {
     }
 
     void tab() override;
-    void line_feed() override;
+    void line_feed(bool first_col) override;
     void carriage_return() override;
     void backspace() override;
     void write_char(code_point code) override;

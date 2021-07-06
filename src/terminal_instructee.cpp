@@ -8,9 +8,9 @@ void terminal_instructee::tab()
     term->tab();
 }
 
-void terminal_instructee::line_feed()
+void terminal_instructee::line_feed(bool first_col)
 {
-    term->newline(false);
+    term->newline(first_col);
 }
 
 void terminal_instructee::carriage_return()
