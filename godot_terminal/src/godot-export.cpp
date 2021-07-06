@@ -65,7 +65,7 @@ void get_glyph(
         gd100::terminal const* const term,
         int const row,
         int const column,
-        gdl::pool_int_array& line_arr)
+        godot_int* line_arr)
 {
     auto const glyph = term->screen.get_glyph({column, row});
 
@@ -75,9 +75,9 @@ void get_glyph(
     if (glyph.style.mode.is_set(gd100::glyph_attr_bit::reversed))
         std::swap(fg, bg);
 
-    line_arr.set(column * 3 + 0, fg);
-    line_arr.set(column * 3 + 1, bg);
-    line_arr.set(column * 3 + 2, glyph.code);
+    line_arr[column * 3 + 0] = fg;
+    line_arr[column * 3 + 1] = bg;
+    line_arr[column * 3 + 2] = glyph.code;
 }
 
 gdl::variant get_line(gd100::terminal const* const term, int const line)
@@ -87,9 +87,14 @@ gdl::variant get_line(gd100::terminal const* const term, int const line)
     gdl::pool_int_array line_arr;
     line_arr.resize(width * 3);
 
+    auto write_access = gdl::api->godot_pool_int_array_write(line_arr.get());
+    auto write_ptr = gdl::api->godot_pool_int_array_write_access_ptr(write_access);
+
     for(int col = 0; col != width; ++col) {
-        get_glyph(term, line, col, line_arr);
+        get_glyph(term, line, col, write_ptr);
     }
+
+    gdl::api->godot_pool_int_array_write_access_destroy(write_access);
 
     return line_arr;
 }
