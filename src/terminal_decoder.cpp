@@ -438,10 +438,12 @@ decode_session_ret decode_csi_pub(
             break;
 
         case 'B':
+        case 'e':
             t.move_cursor(get_number(0, 1), direction::down);
             break;
 
         case 'C':
+        case 'a':
             t.move_cursor(get_number(0, 1), direction::forward);
             break;
 
