@@ -382,6 +382,16 @@ decode_session_ret decode_csi_pub(
     };
 
     switch(final) {
+        default:
+#if 0
+            std::cout << "Unknown ESC [ ";
+            for (int i = 0; i != param_count; ++i) {
+                std::cout << params[i] << ' ';
+            }
+            std::cout << final << '\n';
+#endif
+            break;
+
         case 'J': {
             switch(get_number(0)) {
                 case 0:
