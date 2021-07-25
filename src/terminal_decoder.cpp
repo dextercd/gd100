@@ -528,6 +528,9 @@ decode_session_ret decode_private_set(
             case 1006:
                 t.set_mouse_mode_extended(set);
                 break;
+
+            case 2004:
+                t.set_bracketed_paste(set);
         }
     }
 

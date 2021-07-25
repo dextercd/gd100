@@ -231,4 +231,12 @@ void terminal_instructee::set_mouse_mode_extended(bool set)
         term->mode.unset(terminal_mode_bit::extended_mouse);
 }
 
+void terminal_instructee::set_bracketed_paste(bool set)
+{
+    if (set)
+        term->mode.set(terminal_mode_bit::bracketed_paste);
+    else
+        term->mode.unset(terminal_mode_bit::bracketed_paste);
+}
+
 } // gd100::

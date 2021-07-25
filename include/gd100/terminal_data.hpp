@@ -22,6 +22,7 @@ struct terminal_cursor {
 enum class terminal_mode_bit {
     insert = 1 << 0,
     extended_mouse = 1 << 1,
+    bracketed_paste = 1 << 2,
 };
 
 enum class mouse_mode {

@@ -48,6 +48,7 @@ public:
     virtual void set_bold(bool enable) = 0;
     virtual void set_mouse_mode(mouse_mode, bool set) = 0;
     virtual void set_mouse_mode_extended(bool set) = 0;
+    virtual void set_bracketed_paste(bool set) = 0;
 };
 
 class decoder {
