@@ -1,5 +1,5 @@
-#ifndef KATERM_PROGRAM_HPP
-#define KATERM_PROGRAM_HPP
+#ifndef GDTERM_PROGRAM_HPP
+#define GDTERM_PROGRAM_HPP
 
 #include <cstdint>
 
