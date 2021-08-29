@@ -13,9 +13,9 @@
 #include <gdnative_api_struct.gen.h>
 
 #include "gdterm_export.h"
-#include <gd100/terminal.hpp>
-#include <gd100/program.hpp>
-#include <gd100/program_terminal_manager.hpp>
+#include <katerm/terminal.hpp>
+#include <katerm/program.hpp>
+#include <katerm/program_terminal_manager.hpp>
 
 #include <stdlib.h>
 #include <fcntl.h>
@@ -29,7 +29,7 @@
 #include <gdl/dictionary.hpp>
 #include <gdl/string.hpp>
 
-gd100::program_terminal_manager manager;
+katerm::program_terminal_manager manager;
 
 godot_variant_call_error object_emit_signal_deferred(
         godot_object *p_object, gdl::string const& p_signal_name,
@@ -62,7 +62,7 @@ godot_variant_call_error object_emit_signal_deferred(
 }
 
 void get_glyph(
-        gd100::terminal const* const term,
+        katerm::terminal const* const term,
         int const row,
         int const column,
         godot_int* line_arr)
@@ -72,7 +72,7 @@ void get_glyph(
     auto fg = to_u32(glyph.style.fg);
     auto bg = to_u32(glyph.style.bg);
 
-    if (glyph.style.mode.is_set(gd100::glyph_attr_bit::reversed))
+    if (glyph.style.mode.is_set(katerm::glyph_attr_bit::reversed))
         std::swap(fg, bg);
 
     line_arr[column * 3 + 0] = fg;
@@ -80,7 +80,7 @@ void get_glyph(
     line_arr[column * 3 + 2] = glyph.code;
 }
 
-gdl::variant get_line(gd100::terminal const* const term, int const line)
+gdl::variant get_line(katerm::terminal const* const term, int const line)
 {
     auto const width = term->screen.size().width;
 
@@ -99,7 +99,7 @@ gdl::variant get_line(gd100::terminal const* const term, int const line)
     return line_arr;
 }
 
-gdl::variant get_lines(gd100::terminal const* const term)
+gdl::variant get_lines(katerm::terminal const* const term)
 {
     gdl::dictionary line_dict;
 
@@ -114,7 +114,7 @@ gdl::variant get_lines(gd100::terminal const* const term)
     return line_dict;
 }
 
-godot_variant get_cursor(gd100::terminal const* const term)
+godot_variant get_cursor(katerm::terminal const* const term)
 {
     godot_vector2 cursor_pos;
     gdl::api->godot_vector2_new(&cursor_pos, term->cursor.pos.x, term->cursor.pos.y);
@@ -129,7 +129,7 @@ std::optional<gdl::variant> lines_key;
 std::optional<gdl::variant> cursor_key;
 std::optional<gdl::variant> scroll_change_key;
 
-gdl::variant get_terminal_data(const gd100::terminal* const term)
+gdl::variant get_terminal_data(const katerm::terminal* const term)
 {
     gdl::dictionary term_dict;
 
@@ -199,12 +199,12 @@ auto time_call(char const* const label, const F& f)
     return ret;
 }
 
-class terminal_program : public gd100::program {
+class terminal_program : public katerm::program {
 public:
-    gd100::terminal terminal;
+    katerm::terminal terminal;
     int master_descriptor;
     godot_object* instance;
-    gd100::decoder decoder;
+    katerm::decoder decoder;
 
     // Mutex necessary to protect access to the terminal and related things.
     //
@@ -221,7 +221,7 @@ public:
     int previous_y = -1;
     terminal_mouse_button held_button = terminal_mouse_button::none;
 
-    terminal_program(gd100::terminal t, int const md, godot_object* const i)
+    terminal_program(katerm::terminal t, int const md, godot_object* const i)
         : terminal{std::move(t)}
         , master_descriptor{md}
         , instance{i}
@@ -237,7 +237,7 @@ public:
     {
         auto lock = std::scoped_lock{terminal_mutex};
 
-        gd100::terminal_instructee t{&terminal};
+        katerm::terminal_instructee t{&terminal};
         time_call("decode", [&] { decoder.decode(bytes, count, t); return 0; });
 
         if (!more_data_coming) {
@@ -261,7 +261,7 @@ public:
 #endif
     }
 
-    void send_code(gd100::code_point const code)
+    void send_code(katerm::code_point const code)
     {
         std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
         std::string u8str = converter.to_bytes(code);
@@ -284,18 +284,18 @@ public:
 
         bool const released = button != terminal_mouse_button::none && !pressed;
 
-        gd100::mouse_mode mode;
+        katerm::mouse_mode mode;
         bool is_sgr;
 
         {
             auto lock = std::scoped_lock{terminal_mutex};
             mode = terminal.mouse;
-            is_sgr = terminal.mode.is_set(gd100::terminal_mode_bit::extended_mouse);
+            is_sgr = terminal.mode.is_set(katerm::terminal_mode_bit::extended_mouse);
         }
 
-        if (mode == gd100::mouse_mode::none) return;
-        if (mode == gd100::mouse_mode::x10 && !pressed) return;
-        if (mode == gd100::mouse_mode::button && !pressed && !released) return;
+        if (mode == katerm::mouse_mode::none) return;
+        if (mode == katerm::mouse_mode::x10 && !pressed) return;
+        if (mode == katerm::mouse_mode::button && !pressed && !released) return;
 
         int button_code;
 
@@ -305,7 +305,7 @@ public:
                 return;
 
             // Motion mode only receives info when a button is held
-            if (mode == gd100::mouse_mode::motion
+            if (mode == katerm::mouse_mode::motion
                 && held_button == terminal_mouse_button::none)
                 return;
 
@@ -446,7 +446,7 @@ terminal_program* start_program(godot_object* const instance)
 
     close(slavefd);
 
-    auto const size = gd100::extend{132, 35};
+    auto const size = katerm::extend{132, 35};
 
 
     auto const winsz = winsize{
@@ -459,7 +459,7 @@ terminal_program* start_program(godot_object* const instance)
         throw std::runtime_error{"Couldn't set window size."};
 
     auto program = std::make_unique<terminal_program>(
-        gd100::terminal{size},
+        katerm::terminal{size},
         masterfd,
         instance
     );
