@@ -9,11 +9,11 @@
 #include <sys/epoll.h>
 #include <poll.h>
 
-#include <katerm/program_terminal_manager.hpp>
+#include "program_terminal_manager.hpp"
 
 using namespace std::chrono_literals;
 
-namespace katerm {
+namespace gd100 {
 
 constexpr std::size_t read_buffer_size = BUFSIZ;
 
@@ -161,4 +161,4 @@ program_terminal_manager::~program_terminal_manager()
     controller.join();
 }
 
-} // katerm::
+} // gd100::

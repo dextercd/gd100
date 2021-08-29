@@ -14,8 +14,8 @@
 
 #include "gdterm_export.h"
 #include <katerm/terminal.hpp>
-#include <katerm/program.hpp>
-#include <katerm/program_terminal_manager.hpp>
+#include "program.hpp"
+#include "program_terminal_manager.hpp"
 
 #include <stdlib.h>
 #include <fcntl.h>
@@ -29,7 +29,7 @@
 #include <gdl/dictionary.hpp>
 #include <gdl/string.hpp>
 
-katerm::program_terminal_manager manager;
+gd100::program_terminal_manager manager;
 
 godot_variant_call_error object_emit_signal_deferred(
         godot_object *p_object, gdl::string const& p_signal_name,
@@ -199,7 +199,7 @@ auto time_call(char const* const label, const F& f)
     return ret;
 }
 
-class terminal_program : public katerm::program {
+class terminal_program : public gd100::program {
 public:
     katerm::terminal terminal;
     int master_descriptor;
